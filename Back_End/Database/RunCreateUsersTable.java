@@ -8,7 +8,7 @@ class RunCreateUsersTable {
     public static void main(String[] args) {
         String url = "jdbc:mysql://localhost:3306/Distributed-Software?useSSL=false&serverTimezone=UTC";
         String user = "root";
-        String password = "//Sjj20051206";
+        String password = "//your-password";
         String sqlFilePath = "D:\\Private\\Grade_3\\Distributed-Software-HW\\Back_End\\Database\\create_users_table.sql"; // SQL 文件放在模块根目录
 
         try {
