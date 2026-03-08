@@ -1,2 +1,3 @@
 # 忽略项目中所有目录的 .vscode 文件夹
 **/.vscode/
+git_add_list.txt
