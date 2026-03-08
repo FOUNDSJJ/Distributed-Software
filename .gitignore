@@ -8,3 +8,4 @@ Front_End/package.json
 **/assets/sass/**
 **/assets/webfonts/**
 **/test/**
+Back_End/Database/**.java

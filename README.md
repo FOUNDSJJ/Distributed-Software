@@ -8,11 +8,17 @@
 
 ## 🔍 本地部署方法
 
-## 🔹 前端部署（Nodejs+Npm）
+### 🔹 快速开始
+
+  ```bash
+  git clone git@github.com:FOUNDSJJ/Distributed-Software.git
+  ```
+
+### 🔹 前端部署（Nodejs+Npm）
 
 - 👤 **CMD（以管理员身份打开）**
 
-  ```sql
+  ```cmd
   //切换到前端文件夹
   cd Front_End
 
@@ -29,6 +35,18 @@
 - 🖱 **访问前端**
   浏览器输入```http://localhost:3000```即可
 
+### 🔹 数据库创建（Mysql+Java）
+
+- 👤 **CMD（创建数据库）**
+  ```cmd
+  mysql -u root -p
+
+  CREATE DATABASE Distributed-Software; 
+
+  USE Distributed-Software;
+
+  mysql> Back_End/Database/create_users_table.sql
+  ```
 
 ***
 
