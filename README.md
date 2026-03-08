@@ -6,6 +6,33 @@
 ***
 
 
+## 🔍 本地部署方法
+
+## 🔹 前端部署（Nodejs+Npm）
+
+- 👤 **CMD（以管理员身份打开）**
+
+  ```sql
+  //切换到前端文件夹
+  cd Front_End
+
+  //初始化nodejs的package.json
+  npm init -y
+
+  //安装http-server功能
+  npm install -g http-server
+
+  //将前端运行在3000端口，并开启接收跨域请求
+  http-server -p 3000 --cros
+  ```
+
+- 🖱 **访问前端**
+  浏览器输入http://localhost:3000
+
+
+***
+
+
 ## 🔍 项目主页预览
 ![主页预览](graph/index.png)
 
