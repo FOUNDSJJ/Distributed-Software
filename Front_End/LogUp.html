@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户注册界面</title>
+    <link rel="stylesheet" href="assets/css/logup-style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- 左侧欢迎区域 -->
+        <div class="welcome-section">
+            <h1>WELCOME !</h1>
+        </div>
+
+        <!-- 右侧注册表单 -->
+        <div class="register-section">
+            <h2>新用户注册</h2>
+
+            <label for="username">用户名</label>
+            <input type="text" id="username" class="register" placeholder="请输入用户名">
+
+            <label for="phonenumber">手机号</label>
+            <input type="text" id="phonenumber" class="register" placeholder="请输入手机号">
+
+            <label for="pwd">登录密码</label>
+            <input type="password" id="pwd" class="register" placeholder="请输入密码">
+
+            <label for="c_pwd">确认密码</label>
+            <input type="password" id="c_pwd" class="register" placeholder="请再次输入密码">
+
+            <div class="checkbox">
+                <input type="checkbox" id="agree">
+                <span>我已阅读并同意《用户注册协议》</span>
+            </div>
+
+            <input type="submit" class="submit" value="同意以上协议并注册" onclick="register(event)">
+
+            <div class="links">
+                <a href="index.html">返回首页</a>
+                <a href="LogIn.html">登录</a>
+            </div>
+        </div>
+    </div>
+    <script src="LogUp.js"></script>
+</body>
+</html>
