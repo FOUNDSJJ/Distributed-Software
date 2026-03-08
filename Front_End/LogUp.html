@@ -15,25 +15,26 @@
         <!-- 右侧注册表单 -->
         <div class="register-section">
             <h2>新用户注册</h2>
+            <form id="registerForm">
+                <label for="username">用户名</label>
+                <input type="text" id="username" class="register" placeholder="请输入用户名">
 
-            <label for="username">用户名</label>
-            <input type="text" id="username" class="register" placeholder="请输入用户名">
+                <label for="phonenumber">手机号</label>
+                <input type="text" id="phonenumber" class="register" placeholder="请输入手机号">
 
-            <label for="phonenumber">手机号</label>
-            <input type="text" id="phonenumber" class="register" placeholder="请输入手机号">
+                <label for="pwd">登录密码</label>
+                <input type="password" id="pwd" class="register" placeholder="请输入密码">
 
-            <label for="pwd">登录密码</label>
-            <input type="password" id="pwd" class="register" placeholder="请输入密码">
+                <label for="c_pwd">确认密码</label>
+                <input type="password" id="c_pwd" class="register" placeholder="请再次输入密码">
 
-            <label for="c_pwd">确认密码</label>
-            <input type="password" id="c_pwd" class="register" placeholder="请再次输入密码">
+                <div class="checkbox">
+                    <input type="checkbox" id="agree">
+                    <span>我已阅读并同意《用户注册协议》</span>
+                </div>
 
-            <div class="checkbox">
-                <input type="checkbox" id="agree">
-                <span>我已阅读并同意《用户注册协议》</span>
-            </div>
-
-            <input type="submit" class="submit" value="同意以上协议并注册" onclick="register(event)">
+                <input type="submit" class="submit" id="registerBtn" value="同意以上协议并注册">
+            </form>
 
             <div class="links">
                 <a href="index.html">返回首页</a>

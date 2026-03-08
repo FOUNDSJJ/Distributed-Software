@@ -1,3 +1,9 @@
 # 忽略项目中所有目录的 .vscode 文件夹
+**/.idea/
 **/.vscode/
 git_add_list.txt
+**/out
+**/target
+Front_End/package.json
+**/assets/sass/**
+**/assets/webfonts/**
