@@ -7,3 +7,4 @@ git_add_list.txt
 Front_End/package.json
 **/assets/sass/**
 **/assets/webfonts/**
+**/test/**
