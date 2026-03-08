@@ -1,6 +1,6 @@
 # 🛒 商品库存与秒杀系统
 
-欢迎来到**商品库存与秒杀系统**的Web主页！本主页设计简洁直观，方便用户浏览商品信息、库存状态和秒杀活动。
+欢迎来到**商品库存与秒杀系统**！本主页设计简洁直观，方便用户浏览商品信息、库存状态和秒杀活动。
 
 
 ***
@@ -47,6 +47,9 @@
 
   mysql> Back_End/Database/create_users_table.sql
   ```
+
+- 👤 **Java（创建数据库）**
+  先通过CMD方式在Mysql当中创建数据库```Distributed-Software```，再通过```IDEA```运行```RunCreateUsersTable.java```直接创建表格，注意需要将程序当中的```password```更换为```mysql```当中```root```用户的密码。
 
 ***
 
