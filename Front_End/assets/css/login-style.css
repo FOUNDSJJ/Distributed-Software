@@ -1,0 +1,154 @@
+/* ===== Google Fonts ===== */
+@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,900");
+
+/* ===== Reset ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden; /* 禁止滚动 */
+    font-family: "思源黑体", "Arial", sans-serif;
+}
+
+/* ===== Body & Background ===== */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: url("images/login-background.png") no-repeat center center fixed;
+    background-size: cover;
+}
+
+/* ===== 页面主体容器 ===== */
+.main-wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    height: 80vh;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+/* ===== 左侧欢迎区域 ===== */
+.welcome-section {
+    width: 80%;          /* 相对屏幕宽度 */
+    max-width: 600px;    /* 最大宽度 */
+    height: auto;        /* 高度自适应 */
+    padding: 30px;       /* 内边距 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255,255,255,0.8);
+    border: 3px solid #000;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.welcome-section h1 {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.welcome-section .smile {
+    font-size: 6rem;
+}
+
+/* ===== 右侧登录框 ===== */
+.login-section {
+    width: 400px;
+    background: rgba(245, 245, 247, 0.95); /* 半透明背景 */
+    border-radius: 10px;
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.login-section h2 {
+    text-align: center;
+    color: #000000;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+}
+
+.login-section label {
+    color: #000000;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.login-section input[type="text"],
+.login-section input[type="password"] {
+    width: 100%;
+    height: 40px;
+    padding: 5px 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* checkbox */
+.checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.checkbox input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+/* submit button */
+.submit {
+    background-color: #000;
+    color: #fff;
+    font-weight: bold;
+    font-size: large;
+    height: 45px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: "思源黑体", "Arial", sans-serif;
+    margin-bottom: 20px;
+}
+
+.submit:hover {
+    opacity: 0.9;
+}
+
+/* 链接 */
+.links {
+    display: flex;
+    justify-content: space-between;
+    font-family: "思源黑体", "Arial", sans-serif;
+}
+
+.links a {
+    color: #000000;
+    text-decoration: none;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+/* ===== 响应式 ===== */
+@media screen and (max-width: 992px) {
+    .main-wrapper {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .welcome-section {
+        margin-bottom: 40px;
+    }
+    
+    .login-section {
+        width: 90%;
+    }

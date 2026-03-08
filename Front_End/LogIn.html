@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录界面</title>
+    <link rel="stylesheet" href="assets/css/login-style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- 左侧欢迎区域 -->
+        <div class="welcome-section">
+            <h1>WELCOME !</h1>
+        </div>
+
+        <!-- 右侧登录框 -->
+        <div class="login-section">
+            <h2>用户登录</h2>
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="用户名">
+
+            <label for="pwd">密码</label>
+            <input type="password" id="pwd" placeholder="密码">
+
+            <div class="checkbox">
+                <input type="checkbox" id="remember">
+                <span>记住密码</span>
+            </div>
+
+            <button class="submit" onclick="submits(event)">登录</button>
+
+            <div class="links">
+                <a href="index.html">返回首页</a>
+                <a href="LogUp.html">注册账号</a>
+            </div>
+        </div>
+    </div>
+    <script src="LogIn.js"></script>
+</body>
+</html>
