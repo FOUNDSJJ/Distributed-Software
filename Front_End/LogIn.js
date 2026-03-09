@@ -11,7 +11,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
         return;
     }
 
-    fetch('http://localhost:9090/auth/login', {
+    fetch('auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // ✅ 关键：允许跨域 Cookie 保存

@@ -44,7 +44,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     registerBtn.disabled = true;
     registerBtn.value = '注册中...'; // input 用 value 修改文字
 
-    fetch('http://localhost:9090/auth/register', {
+    fetch('auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, phone_number })

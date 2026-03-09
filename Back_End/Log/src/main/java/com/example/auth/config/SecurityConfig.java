@@ -42,7 +42,8 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true); // 是否允许携带 Cookie
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // 允许前端地址
+        config.addAllowedOriginPattern("*"); // 允许所有来源
+        config.setAllowCredentials(true);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 允许方法
         config.setAllowedHeaders(Arrays.asList("*")); // 允许请求头
 
