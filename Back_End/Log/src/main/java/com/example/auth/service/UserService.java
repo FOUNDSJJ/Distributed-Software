@@ -14,54 +14,53 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
-    /**
-     * 根据手机号查询用户
-     */
+    public User findById(Long id) {
+        return userMapper.findById(id);
+    }
+
     public User findByPhoneNumber(String phoneNumber) {
         return userMapper.findByPhoneNumber(phoneNumber);
     }
 
-    /**
-     * 注册新用户
-     * @return 插入是否成功
-     */
+    public User findByUserName(String username) {
+        return userMapper.findByUserName(username);
+    }
+
     public boolean registerUser(String username, String phoneNumber, String rawPassword) {
-        // 1. 检查手机号是否已注册
-        if (userMapper.findByPhoneNumber(phoneNumber) != null) {
-            return false; // 手机号已注册
+        if (userMapper.findByUserName(username) != null) {
+            return false;
         }
 
-        // 2. 创建 User 对象
+        if (userMapper.findByPhoneNumber(phoneNumber) != null) {
+            return false;
+        }
+
         User user = new User();
         user.setUsername(username);
         user.setPhoneNumber(phoneNumber);
         user.setPasswordHash(PasswordUtil.hashPassword(rawPassword));
-        user.setStatus(1); // 默认启用
+        user.setStatus(1);
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
         user.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
 
-        // 3. 插入数据库
         return userMapper.insertUser(user) > 0;
     }
 
-    /**
-     * 验证登录
-     * @return 用户对象，如果验证失败返回 null
-     */
-    public User validateLogin(String phoneNumber, String rawPassword) {
-        User user = userMapper.findByPhoneNumber(phoneNumber);
-        if (user == null || user.getStatus() != 1) {
-            return null; // 用户不存在或已禁用
+    public User validateLogin(String username, String rawPassword) {
+        User user = userMapper.findByUserName(username);
+        if (user == null) {
+            return null;
         }
 
-        // 验证密码
+        if (user.getStatus() == null || user.getStatus() != 1) {
+            return null;
+        }
+
         if (!PasswordUtil.verifyPassword(rawPassword, user.getPasswordHash())) {
-            return null; // 密码错误
+            return null;
         }
 
-        // 更新最后登录时间
         userMapper.updateLastLogin(user.getId(), new Timestamp(System.currentTimeMillis()));
-
         return user;
     }
 }

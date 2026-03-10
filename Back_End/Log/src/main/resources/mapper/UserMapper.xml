@@ -4,12 +4,33 @@
 
 <mapper namespace="com.example.auth.mapper.UserMapper">
 
-    <select id="findByPhoneNumber" parameterType="String" resultType="com.example.auth.model.User">
-        SELECT * FROM users WHERE phone_number = #{phoneNumber}
+    <resultMap id="UserResultMap" type="com.example.auth.model.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="phoneNumber" column="phone_number"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="lastLogin" column="last_login"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <select id="findByPhoneNumber" parameterType="String" resultMap="UserResultMap">
+        SELECT id, username, phone_number, password_hash, created_at, updated_at, last_login, status
+        FROM users
+        WHERE phone_number = #{phoneNumber}
     </select>
 
-    <select id="findByUserName" parameterType="String" resultType="com.example.auth.model.User">
-        SELECT * FROM users WHERE username = #{username}
+    <select id="findByUserName" parameterType="String" resultMap="UserResultMap">
+        SELECT id, username, phone_number, password_hash, created_at, updated_at, last_login, status
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <select id="findById" parameterType="Long" resultMap="UserResultMap">
+        SELECT id, username, phone_number, password_hash, created_at, updated_at, last_login, status
+        FROM users
+        WHERE id = #{id}
     </select>
 
     <insert id="insertUser" parameterType="com.example.auth.model.User" useGeneratedKeys="true" keyProperty="id">
@@ -17,8 +38,11 @@
         VALUES(#{username}, #{phoneNumber}, #{passwordHash}, #{status}, NOW(), NOW())
     </insert>
 
-    <update id="updateLastLogin" parameterType="map">
-        UPDATE users SET last_login = #{lastLogin}, updated_at = NOW() WHERE id = #{id}
+    <update id="updateLastLogin">
+        UPDATE users
+        SET last_login = #{lastLogin},
+        updated_at = NOW()
+        WHERE id = #{id}
     </update>
 
 </mapper>

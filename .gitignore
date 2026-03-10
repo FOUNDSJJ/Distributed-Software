@@ -9,5 +9,6 @@ Front_End/package.json
 Front_End/package-lock.json
 **/assets/sass/
 **/assets/webfonts/
-**/test/**
-Front_End/server.js
+**/test/
+**/.gitattributes
+**/.gitignore

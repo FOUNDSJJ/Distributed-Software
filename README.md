@@ -14,9 +14,13 @@
   git clone git@github.com:FOUNDSJJ/Distributed-Software.git
   ```
 
-### 🔹 前端部署（Nodejs+Npm）
+### 🔹 Docker部署
 
-- 👤 **CMD（以管理员身份打开，需要准备Nodejs以及Npm环境）**
+👤 **CMD（以管理员身份打开，需要准备Nodejs以及Npm环境）**
+
+  参考[Docker-Deployment.md](./Docker-Deployment.md)文件。
+
+<!-- - 👤 **CMD（以管理员身份打开，需要准备Nodejs以及Npm环境）**
 
   （1）在前端根目录下新建```server.js```，加入以下内容并根据自己电脑配置修改其中的参数。
   ```js
@@ -137,7 +141,7 @@
 - 👤 **Java（创建数据库）**
   先通过CMD方式在Mysql当中创建数据库```Distributed-Software```，再通过```IDEA```运行```RunCreateUsersTable.java```直接创建表格，注意需要将程序当中的```password```更换为```mysql```当中```root```用户的密码。
 
-***
+*** -->
 
 
 ## 🔍 项目主页预览

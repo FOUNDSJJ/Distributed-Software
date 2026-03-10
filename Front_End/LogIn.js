@@ -11,7 +11,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
         return;
     }
 
-    fetch('auth/login', {
+    fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // ✅ 关键：允许跨域 Cookie 保存
@@ -36,7 +36,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
             // JS 无法读取，但浏览器会在后续 fetch 请求自动携带
 
             // 登录成功跳转
-            window.location.replace("MainInterface/index.html");
+            window.location.replace("./index.html");
 
         } else {
             alert('登录失败：' + (data.message || '未知错误'));

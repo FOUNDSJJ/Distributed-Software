@@ -1,26 +1,43 @@
 package com.example.auth.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
+import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class SessionService {
-    private final Map<String, Long> sessionMap = new ConcurrentHashMap<>();
+
+    private static final String SESSION_PREFIX = "session:";
+    private static final Duration SESSION_TTL = Duration.ofHours(24);
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     public String createSession(Long userId) {
-        String token = UUID.randomUUID().toString();
-        sessionMap.put(token, userId);
+        String token = UUID.randomUUID().toString().replace("-", "");
+        String key = SESSION_PREFIX + token;
+        stringRedisTemplate.opsForValue().set(key, String.valueOf(userId), SESSION_TTL);
         return token;
     }
 
     public Long getUserIdByToken(String token) {
-        return sessionMap.get(token);
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+
+        String value = stringRedisTemplate.opsForValue().get(SESSION_PREFIX + token);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Long.valueOf(value);
     }
 
     public void deleteSession(String token) {
-        sessionMap.remove(token);
+        if (token != null && !token.isBlank()) {
+            stringRedisTemplate.delete(SESSION_PREFIX + token);
+        }
     }
 }
