@@ -55,13 +55,13 @@ VALUES ('admin', '13800000000', 'admin123', 1);
 ### 2.2 导入 SQL 到 Docker MySQL 容器
 
 ```bash
-# 假设 MySQL 容器名为 mysql，root 密码是 123456
-docker exec -i mysql mysql -uroot -p123456 < /home/Distributed-Software/Database/Log_SQL/init_users_table.sql
+# 假设 MySQL 容器名为 mysql，root 密码是 Password
+docker exec -i mysql mysql -uroot -pPassword < /home/Distributed-Software/Database/Log_SQL/init_users_table.sql
 ```
 ### 2.3 验证表是否创建成功
 
 ```bash
-docker exec -it mysql mysql -uroot -p123456 -e "USE distributed_software; SHOW TABLES;"
+docker exec -it mysql mysql -uroot -pPassword -e "USE distributed_software; SHOW TABLES;"
 ```
 ## 3. Docker 配置
 ### 3.1 Dockerfile
@@ -85,7 +85,7 @@ services:
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: Password
       MYSQL_DATABASE: distributed_software
       TZ: Asia/Shanghai
     command:
@@ -113,7 +113,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_DB: distributed_software
       MYSQL_USERNAME: root
-      MYSQL_PASSWORD: 123456
+      MYSQL_PASSWORD: Password
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
@@ -132,7 +132,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_DB: distributed_software
       MYSQL_USERNAME: root
-      MYSQL_PASSWORD: 123456
+      MYSQL_PASSWORD: Password
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
@@ -218,10 +218,10 @@ docker compose ps
 docker compose logs -f backend1 backend2
 
 # 5. 导入数据库 SQL 文件
-docker exec -i mysql mysql -uroot -p123456 < /home/Distributed-Software/Database/Log_SQL/init_users_table.sql
+docker exec -i mysql mysql -uroot -pPassword < /home/Distributed-Software/Database/Log_SQL/init_users_table.sql
 
 # 6. 进入 mysql 容器
-docker exec -it mysql mysql -uroot -p123456
+docker exec -it mysql mysql -uroot -pPassword
 
 # 7. 停止所有服务
 docker compose down
@@ -254,7 +254,7 @@ mvn clean package
 
     - 后端端口：```http://localhost:8081```、```http://localhost:8082```
 
-    - 数据库表：```docker exec -it mysql mysql -uroot -p123456 -e "USE distributed_software; SHOW TABLES;"```
+    - 数据库表：```docker exec -it mysql mysql -uroot -pPassword -e "USE distributed_software; SHOW TABLES;"```
 
 - 后续操作：
 
