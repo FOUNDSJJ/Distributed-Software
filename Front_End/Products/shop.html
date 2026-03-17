@@ -41,14 +41,30 @@
     </div>
     <!-- End Header -->
 
-    <!-- Start shop-header -->
-    <div class="shop-header">
-      <div class="content">
-        <h1>#Stayhome</h1>
-        <h3>商   品   界   面</h3>
+    <div class="product-search">
+      <div class="container">
+        <div class="search-panel">
+          <div class="search-copy">
+            <p class="search-tag">商品查询</p>
+            <p class="search-tip">支持中文、英文、数字和符号搜索，输入完整商品名即可精准查询。</p>
+          </div>
+          <form class="search-form" id="product-search-form">
+            <label class="search-label" for="product-name">商品名称</label>
+            <div class="search-input-group">
+              <input
+                type="text"
+                id="product-name"
+                name="product-name"
+                placeholder="请输入商品名，例如：游戏鼠标"
+                autocomplete="off"
+              />
+              <button type="submit">查询商品</button>
+            </div>
+            <p class="search-feedback" id="search-feedback"></p>
+          </form>
+        </div>
       </div>
     </div>
-    <!-- End shop-header -->
 
     <!-- Start features-products -->
     <div class="features-products">
@@ -110,5 +126,6 @@
 
     <script src="./all.min.js"></script>
     <script src="./shop.js"></script>
+    <script src="./query.js"></script>
   </body>
 </html>

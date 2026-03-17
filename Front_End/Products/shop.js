@@ -44,40 +44,61 @@ function createProductCard(product) {
 }
 
 function showMessage(message) {
+  if (!productsContainer) {
+    return;
+  }
+
   productsContainer.innerHTML = `<p class="products-message">${message}</p>`;
 }
 
-fetch("/api/products/info", {
-  method: "GET",
-  credentials: "include",
-})
-  .then((response) => response.json())
-  .then((data) => {
-    if (!productsContainer) {
-      return;
-    }
+function renderProducts(products) {
+  if (!productsContainer) {
+    return;
+  }
 
-    if (!data.success) {
-      showMessage(data.message || "仓库当中没有商品可出售");
-      return;
-    }
+  if (!Array.isArray(products) || !products.length) {
+    showMessage("仓库当中没有商品可出售");
+    return;
+  }
 
-    const products = Object.values(data.datas || {});
+  productsContainer.innerHTML = products.map((product) => createProductCard(product)).join("");
+}
 
-    if (!products.length) {
-      showMessage("仓库当中没有商品可出售");
-      return;
-    }
-
-    productsContainer.innerHTML = products
-      .slice(0, Number(data.number) || products.length)
-      .map((product) => createProductCard(product))
-      .join("");
+function loadAllProducts() {
+  return fetch("/api/products/info", {
+    method: "GET",
+    credentials: "include",
   })
-  .catch((err) => {
-    console.error("获取商品信息失败：", err);
+    .then((response) => response.json())
+    .then((data) => {
+      if (!productsContainer) {
+        return;
+      }
 
-    if (productsContainer) {
+      if (!data.success) {
+        showMessage(data.message || "仓库当中没有商品可出售");
+        return;
+      }
+
+      const products = Object.values(data.datas || {}).slice(
+        0,
+        Number(data.number) || Object.values(data.datas || {}).length
+      );
+
+      renderProducts(products);
+    })
+    .catch((err) => {
+      console.error("获取商品信息失败：", err);
       showMessage("获取商品信息失败，请稍后重试");
-    }
-  });
+    });
+}
+
+window.shopPage = {
+  formatPrice,
+  createProductCard,
+  showMessage,
+  renderProducts,
+  loadAllProducts,
+};
+
+loadAllProducts();

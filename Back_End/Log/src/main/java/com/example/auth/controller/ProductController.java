@@ -3,10 +3,7 @@ package com.example.auth.controller;
 import com.example.auth.model.Product;
 import com.example.auth.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,8 +44,8 @@ public class ProductController {
         return Map.of("success", true, "data", product);
     }
 
-    @GetMapping("/{name:[a-zA-Z_][a-zA-Z0-9_]*}")
-    public Map<String, Object> getProductByName(@PathVariable("name") String name) {
+    @GetMapping("/by-name")
+    public Map<String, Object> getProductByName(@RequestParam String name) {
         Product product = productService.getProductByName(name);
         if (product == null) {
             return Map.of("success", false, "message", "该商品名不存在");
