@@ -52,17 +52,60 @@ INSERT INTO users (username, phone_number, password_hash, status)
 VALUES ('admin', '13800000000', 'admin123', 1);
 ```
 
-### 2.2 导入 SQL 到 Docker MySQL 容器
+
+### 2.1 SQL文件内容示例（init_products_table.sql）
+
+```sql
+CREATE DATABASE IF NOT EXISTS distributed_software
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE distributed_software;
+
+CREATE TABLE IF NOT EXISTS products (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '商品ID',
+    name VARCHAR(255) NOT NULL COMMENT '商品名称',
+    price DECIMAL(10,2) NOT NULL COMMENT '商品价格',
+    stock INT NOT NULL DEFAULT 0 COMMENT '库存数量',
+    description TEXT COMMENT '商品描述',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
+```
+
+### 2.3 导入 SQL 到 Docker MySQL 容器
 
 ```bash
 # 假设 MySQL 容器名为 mysql，root 密码是 Password
 docker exec -i mysql mysql -uroot -pPassword < /home/Distributed-Software/Database/Log_SQL/init_users_table.sql
+docker exec -i mysql mysql -uroot -pPassword < /home/Distributed-Software/Database/Product_SQL/init_products_table.sql
 ```
-### 2.3 验证表是否创建成功
+
+### 2.4 验证表是否创建成功
 
 ```bash
 docker exec -it mysql mysql -uroot -pPassword -e "USE distributed_software; SHOW TABLES;"
 ```
+
+### 2.5 通过csv导入表格商品数据
+
+```bash
+# 将数据文件导入mysql容器
+docker cp /path/to/your/csv mysql:/var/lib/mysql-files/data.csv
+
+# 进入mysql容器
+docker exec -it mysql bash
+
+# 密码登录
+mysql -u root -pPassword
+
+USE distributed_software
+
+# 将数据导入，并将数据每一项和表格属性一一对应
+LOAD DATA INFILE '/var/lib/mysql-files/data.csv' INTO TABLE products FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n' (name, price, stock, description);
+```
+
 ## 3. Docker 配置
 ### 3.1 Dockerfile
 
@@ -234,6 +277,10 @@ docker volume rm distributed-software_mysql_data
 
 # 10. 导出jar包
 mvn clean package
+
+# 11. 更换jar包（需要重新构建docker容器）
+docker compose down
+docker compose build
 ```
 
 ## 5. 部署顺序说明

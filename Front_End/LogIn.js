@@ -36,7 +36,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
             // JS 无法读取，但浏览器会在后续 fetch 请求自动携带
 
             // 登录成功跳转
-            window.location.replace("./index.html");
+            window.location.replace("./Products/shop.html");
 
         } else {
             alert('登录失败：' + (data.message || '未知错误'));

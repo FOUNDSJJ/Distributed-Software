@@ -20,4 +20,17 @@
         WHERE id = #{id}
     </select>
 
+    <select id="findByName" parameterType="String" resultMap="ProductResultMap">
+        SELECT id, name, price, stock, description, created_at, updated_at
+        FROM products
+        WHERE name = #{name}
+        LIMIT 1
+    </select>
+
+    <select id="findAll" resultMap="ProductResultMap">
+        SELECT id, name, price, stock, description, created_at, updated_at
+        FROM products
+        ORDER BY id
+    </select>
+
 </mapper>

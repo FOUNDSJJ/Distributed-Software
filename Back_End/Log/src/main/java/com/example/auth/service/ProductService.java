@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -28,7 +29,6 @@ public class ProductService {
     public Product getProductById(Long id) {
         String cacheKey = PRODUCT_CACHE_PREFIX + id;
 
-        // 1. 查缓存
         String cachedValue = stringRedisTemplate.opsForValue().get(cacheKey);
         if (cachedValue != null) {
             if (NULL_VALUE.equals(cachedValue)) {
@@ -37,7 +37,6 @@ public class ProductService {
             return jsonUtil.fromJson(cachedValue, Product.class);
         }
 
-        // 2. 处理缓存击穿：加互斥锁
         String lockKey = PRODUCT_LOCK_PREFIX + id;
         boolean lock = Boolean.TRUE.equals(
                 stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(10))
@@ -62,13 +61,11 @@ public class ProductService {
         try {
             Product product = productMapper.findById(id);
 
-            // 3. 处理缓存穿透：缓存空值
             if (product == null) {
                 stringRedisTemplate.opsForValue().set(cacheKey, NULL_VALUE, Duration.ofMinutes(2));
                 return null;
             }
 
-            // 4. 处理缓存雪崩：加随机过期时间
             int randomMinutes = ThreadLocalRandom.current().nextInt(30, 41);
             stringRedisTemplate.opsForValue().set(
                     cacheKey,
@@ -80,5 +77,17 @@ public class ProductService {
         } finally {
             stringRedisTemplate.delete(lockKey);
         }
+    }
+
+    public Product getProductByName(String name) {
+        return productMapper.findByName(name);
+    }
+
+    public List<Product> getAllProducts() {
+        return productMapper.findAll();
+    }
+
+    public Integer getProductNumber() {
+        return getAllProducts().size();
     }
 }
