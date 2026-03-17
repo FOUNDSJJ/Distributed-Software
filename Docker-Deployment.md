@@ -2,7 +2,7 @@
 
 ## 1. 目录结构示例
 
-假设项目目录 `/home/Distributed-Software` 下：
+假设项目目录 `../Distributed-Software` 下：
 
 ```text
 Distributed-Software/
