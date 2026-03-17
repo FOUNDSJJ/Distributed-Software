@@ -1,6 +1,83 @@
 const iconToggel = document.getElementById("toggle");
 const navLinks = document.getElementById("nav-links");
-iconToggel.addEventListener("click", () => {
-  navLinks.classList.toggle("show");
-});
-console.log(iconToggel);
+const productsContainer = document.getElementById("products-container");
+
+if (iconToggel && navLinks) {
+  iconToggel.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
+}
+
+function formatPrice(price) {
+  const numericPrice = Number(price);
+
+  if (Number.isNaN(numericPrice)) {
+    return "￥0.00";
+  }
+
+  return `￥${numericPrice.toFixed(2)}`;
+}
+
+function createProductCard(product) {
+  return `
+    <div class="product">
+      <div class="img-container">
+        <img src="../assets/css/images/product.png" alt="${product.name}" />
+      </div>
+      <div class="content">
+        <h3 class="name">${product.name}</h3>
+        <p class="stock">余量：${product.stock}</p>
+        <p class="description">${product.description}</p>
+        <div class="rate">
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <span class="price">${formatPrice(product.price)}</span>
+        <div class="product-cart">
+          <i class="fa-solid fa-cart-arrow-down"></i>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showMessage(message) {
+  productsContainer.innerHTML = `<p class="products-message">${message}</p>`;
+}
+
+fetch("/api/products/info", {
+  method: "GET",
+  credentials: "include",
+})
+  .then((response) => response.json())
+  .then((data) => {
+    if (!productsContainer) {
+      return;
+    }
+
+    if (!data.success) {
+      showMessage(data.message || "仓库当中没有商品可出售");
+      return;
+    }
+
+    const products = Object.values(data.datas || {});
+
+    if (!products.length) {
+      showMessage("仓库当中没有商品可出售");
+      return;
+    }
+
+    productsContainer.innerHTML = products
+      .slice(0, Number(data.number) || products.length)
+      .map((product) => createProductCard(product))
+      .join("");
+  })
+  .catch((err) => {
+    console.error("获取商品信息失败：", err);
+
+    if (productsContainer) {
+      showMessage("获取商品信息失败，请稍后重试");
+    }
+  });
