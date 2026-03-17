@@ -28,129 +28,6 @@ git clone git@github.com:FOUNDSJJ/Distributed-Software.git
 🛠 **推荐先阅读部署文档**  
 详细部署步骤请参考[Docker-Deployment.md](./Docker-Deployment.md)文件。
 
-<!-- - 👤 **CMD（以管理员身份打开，需要准备Nodejs以及Npm环境）**
-
-  （1）在前端根目录下新建```server.js```，加入以下内容并根据自己电脑配置修改其中的参数。
-  ```js
-  const http = require('http');
-  const serveStatic = require('serve-static');
-  const { createProxyMiddleware } = require('http-proxy-middleware');
-  const os = require('os');
-
-  // ----------------------
-  // 静态文件服务
-  // ----------------------
-  const staticHandler = serveStatic('./', {
-    index: ['index.html'], //index.html为导航页相对路径
-    setHeaders: (res, path) => {
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-  });
-
-  // ----------------------
-  // 代理映射配置
-  // ----------------------
-  const proxyMap = [
-    {
-      prefix: '/auth',                       // 前端请求以 /auth 开头
-      target: '后端ip + auth对应的端口',  // 后端 IP + 端口
-    },
-    // 可以继续添加其他后端映射，例如：
-    // {
-    //   prefix: '/other',
-    //   target: '后端ip + other对应的端口',
-    // }
-  ];
-
-  // ----------------------
-  // 创建 HTTP 服务器
-  // ----------------------
-  const server = http.createServer((req, res) => {
-    // 检查请求是否匹配代理前缀
-    const matched = proxyMap.find(item => req.url.startsWith(item.prefix));
-
-    if (matched) {
-      // 动态创建代理中间件
-      const proxy = createProxyMiddleware({
-        context: matched.prefix,  // 匹配路径
-        target: matched.target,   // 后端地址
-        changeOrigin: true,       // 修改请求头 origin 为 target
-        logLevel: 'debug',        // 开启调试日志
-      });
-      return proxy(req, res, () => {});
-    }
-
-    // 如果没有匹配代理，作为静态文件处理
-    staticHandler(req, res, () => {
-      res.statusCode = 404;
-      res.end('Not found');
-    });
-  });
-
-  // ----------------------
-  // 启动服务器
-  // ----------------------
-  const PORT = 3000; //3000为前端端口，可以改成其他可以使用的端口
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running at:`);
-    console.log(`- Local:   http://localhost:${PORT}`);
-    console.log(`- Network: http://${getLocalIP()}:${PORT}`);
-  });
-
-  // ----------------------
-  // 获取局域网 IP
-  // ----------------------
-  function getLocalIP() {
-    const nets = os.networkInterfaces();
-    for (const name of Object.keys(nets)) {
-      for (const net of nets[name]) {
-        if (net.family === 'IPv4' && !net.internal) {
-          return net.address;
-        }
-      }
-    }
-    return '0.0.0.0';
-  }
-  ```
-
-  （2）cmd当中依次输入以下指令：
-  ```cmd
-  //切换到前端文件夹
-  cd Front_End
-
-  //初始化nodejs的package.json
-  npm init -y
-
-  //安装http-server、serve-static以及http-proxy-middleware功能
-  npm install http-server serve-static http-proxy-middleware
-
-  //将前端运行起来
-  node server.js
-  ```
-
-- 🖱 **访问前端**
-  浏览器输入```http://localhost:3000```即可
-
-### 🔹 数据库创建（Mysql+Java）
-
-- 👤 **CMD（创建数据库）**
-  ```cmd
-  mysql -u root -p
-
-  CREATE DATABASE Distributed-Software; 
-
-  USE Distributed-Software;
-
-  mysql> Back_End/Database/create_users_table.sql
-  ```
-
-- 👤 **Java（创建数据库）**
-  先通过CMD方式在Mysql当中创建数据库```Distributed-Software```，再通过```IDEA```运行```RunCreateUsersTable.java```直接创建表格，注意需要将程序当中的```password```更换为```mysql```当中```root```用户的密码。
-
-*** -->
-
 ## 🖼️ 界面预览
 
 ### 🏠 项目主页
@@ -183,6 +60,104 @@ git clone git@github.com:FOUNDSJJ/Distributed-Software.git
 - 🔄 **支持注册跳转**：新用户可从登录页便捷跳转至注册页。
 - ⚡ **操作路径简洁**：按钮突出，交互流程清晰。
 - 🖼️ **设计语言一致**：与注册页面保持统一风格，整体观感协调。
+
+---
+
+### 🛍️ 商品详情界面
+![商品详情界面](graph/shop.png)
+
+**页面特性：**
+- 🧾 **信息展示集中**：商品名称、价格、库存与描述等核心信息在同一界面内完整呈现。
+- 🔍 **查询入口清晰**：支持用户围绕商品进行快速查找，便于定位目标数据。
+- 📦 **业务字段完整**：界面联动商品状态与库存信息，便于后续展示与业务扩展。
+- ✨ **交互反馈直观**：查询结果与详情信息切换顺畅，提升查看体验。
+
+---
+
+### ✅ 查询成功界面
+![查询成功界面](graph/search_success.png)
+
+**页面特性：**
+- 🎯 **结果呈现明确**：成功命中商品后，界面可直接反馈对应商品信息。
+- 📌 **状态可感知**：成功状态与数据内容同时展示，降低用户判断成本。
+- 🔁 **查询路径闭环**：从查询输入到结果反馈形成完整闭环，便于展示功能可用性。
+
+---
+
+### ❌ 查询失败界面
+![查询失败界面](graph/search_failed.png)
+
+**页面特性：**
+- 🚨 **异常反馈及时**：当商品不存在或查询未命中时，界面可快速给出提示。
+- 🧭 **信息表达清晰**：失败状态与提示语义明确，便于用户继续调整查询条件。
+- 🛡️ **容错体验更完整**：将正常流程与异常场景一并展示，体现系统的稳定性与可用性。
+
+---
+
+## ⚙️ 后端实现
+
+### 👤 注册功能
+
+**功能内容：**
+- 📥 接收用户名、手机号与密码，完成新用户注册。
+- ✅ 校验用户名与手机号是否已存在，避免重复数据写入。
+
+**实现方法：**
+- 🧩 `AuthController` 接收 `/api/auth/register` 请求，先进行空值校验。
+- 🗂️ `UserService` 调用 `UserMapper` 查重并组装 `User` 对象，写入 `users` 表。
+- 🔐 密码通过 `BCryptPasswordEncoder` 加密后再入库，避免明文存储。
+
+**技术栈：**
+- ⚡ Spring Boot 3
+- 🗃️ MyBatis
+- 🐬 MySQL
+- 🔒 Spring Security BCrypt
+
+---
+
+### 🔑 登录功能
+
+**功能内容：**
+- 🚪 支持用户输入账号密码进行身份验证。
+- 🧾 登录成功后返回用户信息，并建立会话状态。
+
+**实现方法：**
+- 🧩 `AuthController` 处理 `/api/auth/login` 请求，校验参数完整性。
+- 🔍 `UserService` 根据用户名查询用户，检查账号状态并使用 BCrypt 比对密码。
+- 🧠 `SessionService` 将登录会话写入 Redis，生成 `SESSIONID` Cookie，TTL 为 24 小时。
+- 🕒 登录成功后同步更新 `last_login` 字段，便于用户追踪与运维观察。
+
+**技术栈：**
+- ⚡ Spring Boot 3
+- 🔒 Spring Security
+- 🧠 Redis
+- 🍪 Cookie Session
+
+---
+
+### 🔍 商品查询功能
+
+**功能内容：**
+- 📦 支持商品列表查询、按 ID 查询与按名称查询。
+- 🧾 为商品详情页与查询成功/失败页提供统一数据支持。
+
+**实现方法：**
+- 🧩 `ProductController` 提供 `/api/products/info`、`/api/products/{id}`、`/api/products/by-name` 三类接口。
+- 🗂️ `ProductMapper` 负责访问 MySQL `products` 表，完成商品列表与单商品查询。
+- 🧠 `ProductService` 在 `getProductById` 中引入 Redis 缓存，优先读缓存，未命中再回源数据库。
+
+**缓存策略：**
+- 🛑 **缓存穿透**：对不存在的商品缓存 `NULL` 占位值，并设置 2 分钟过期时间，减少无效请求直打 MySQL。
+- 🔒 **缓存击穿**：使用 `setIfAbsent` 实现 Redis 互斥锁，热点 Key 重建缓存时只允许一个请求回源。
+- 🌨️ **缓存雪崩**：商品缓存过期时间采用 30-40 分钟随机 TTL，避免大量 Key 同时失效。
+- ⚖️ **缓存与数据库协同**：在保证查询正确性的同时，有效降低数据库压力，提升热点商品访问效率。
+
+**技术栈：**
+- ⚡ Spring Boot 3
+- 🗃️ MyBatis
+- 🐬 MySQL
+- 🧠 Redis
+- 🔁 StringRedisTemplate
 
 ---
 
