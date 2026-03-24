@@ -529,3 +529,31 @@ curl http://localhost/api/products/replication-status/1
 - 正常场景与异常场景均有对应页面反馈，体现了系统在交互层面的完整性与容错性。
 
 ---
+
+# 第四次作业
+
+## 消息队列
+
+### 1. 实现秒杀下单功能，建议Redis缓存库存，Kafka异步处理订单创建，削峰填谷
+
+**实现逻辑**
+
+本次在现有登录、商品查询、Redis 会话和 MySQL 主从读写分离的基础上，新增了独立的秒杀下单后端 `Back_End/Order`，并将秒杀链路拆分为“同步快速校验 + 异步订单创建”两个阶段。用户在前端商品页点击“立即下单”按钮后，浏览器会携带登录后的 `SESSIONID` Cookie 向 `/api/seckill/orders` 发送请求，请求体中只包含商品名称 `product_name`。后端首先通过 Redis 中保存的会话信息识别当前登录用户，再根据商品名称查询对应商品。
+
+为了应对秒杀高并发场景，真正的库存校验与去重不是直接落到数据库，而是先在 Redis 中完成。系统为每个商品维护秒杀库存键，为每个商品维护一个“已下单用户集合”，并使用 Lua 脚本在 Redis 中原子执行以下操作：检查库存是否存在、判断当前用户是否已经抢购过该商品、库存是否大于 0、成功时扣减库存并记录该用户已参与秒杀，同时写入一个订单处理中状态 `QUEUED`。由于 Lua 脚本在 Redis 中是原子执行的，因此能够避免并发条件下库存超卖和重复下单的问题。
+
+在 Redis 侧预扣库存成功后，系统会使用雪花算法生成全局唯一订单号，并将订单消息写入 Kafka 的 `seckill-order-topic`。这样用户请求就不需要同步等待数据库写入，而是由消息队列承担削峰填谷作用，将高并发的下单请求转化为后端可持续消费的异步消息流。Kafka 消费者在后台监听该主题，读取消息后进入数据库事务：先检查订单号是否已经存在，再检查同一用户和同一商品的组合是否已有订单记录，然后执行数据库库存扣减与订单表插入。数据库中的 `seckill_orders` 表通过 `(user_id, product_id)` 唯一约束再次兜底，保证同一用户同一商品只能成功创建一条订单。
+
+如果 Kafka 发送失败、数据库扣库存失败、商品不存在或消费者处理异常，系统会执行补偿逻辑：将 Redis 中已预扣的库存加回去，移除该用户在商品维度上的秒杀标记，并将订单状态改写为失败状态。这样即使异步阶段出现异常，也能保证最终库存不会长期错误减少，订单数据也不会出现半完成状态。整体上，这套方案实现了“Redis 快速挡流量、Kafka 异步削峰、MySQL 最终一致落库”的秒杀下单流程。
+
+**代码概括介绍**
+
+秒杀下单后端的核心代码集中在 `Back_End/Order` 模块中。`SeckillOrderController.java` 提供 `/api/seckill/orders` 的下单接口以及订单查询接口，其中下单接口从请求体读取 `product_name`，并从 Cookie 中提取 `SESSIONID` 来识别用户身份。`SessionService.java` 负责根据 Redis 中的会话键值还原当前用户 ID。`ProductMapper.java` 与 `ProductMapper.xml` 新增了按商品名称查询商品的能力，从而将前端传入的商品名称映射为实际商品记录。
+
+真正的秒杀核心逻辑位于 `OrderService.java`。该类内部定义了 Redis Lua 脚本，用于一次性完成库存检查、重复下单检查、库存扣减、下单状态写入等操作；同时封装了订单状态键、库存键、用户去重键的命名规则。下单入口 `submitSeckillOrder` 会先根据商品名称查询商品，再生成订单号，执行 Redis 预扣减逻辑，预扣减成功后构造 `SeckillOrderMessage` 并投递到 Kafka。若 Kafka 投递失败，则调用补偿方法回滚 Redis 中的预扣减状态。订单消费者 `SeckillOrderConsumer.java` 通过 `@KafkaListener` 监听秒杀主题，读取消息后调用 `createOrder` 进入数据库事务，完成库存最终扣减和订单持久化。
+
+为了提升部署稳定性，`SeckillOrderProducer.java` 中的消息发送被改为同步确认发送结果，只有 Kafka 真正接收成功后才认为请求进入异步处理队列；`KafkaTopicConfig.java` 会在服务启动时自动创建 `seckill-order-topic`，减少因主题不存在导致的消费异常。订单 ID 由 `OrderIdGenerator.java` 负责生成，其实现采用雪花算法思路，保证在单节点部署下也能生成趋势递增且全局唯一的长整型订单号。
+
+数据库层面，`Database/MySQL_RW/master/init.sql` 中新增了 `seckill_orders` 表，字段包含订单号、用户 ID、商品 ID、订单金额、订单状态和时间戳信息，并为 `(user_id, product_id)` 建立唯一索引，用于保证幂等性。部署层面，`docker-compose.yml` 新增了 `kafka` 服务和 `backend-order` 服务，Nginx 配置 `nginx/conf.d/default.conf` 也新增了 `/api/seckill/orders` 到 `backend-order` 的转发规则。前端方面，在 `Front_End/Products/shop.js` 中为动态渲染的商品卡片增加“立即下单”按钮，`Front_End/Products/order.js` 负责携带 Cookie 发起秒杀请求并在页面上展示下单结果，实现了完整的前后端联动。
+
+**界面展示**
