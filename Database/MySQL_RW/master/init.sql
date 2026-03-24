@@ -26,3 +26,19 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS seckill_orders (
+    order_no BIGINT NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT NOT NULL,
+    order_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'CREATED',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (order_no),
+    UNIQUE KEY uq_seckill_user_product (user_id, product_id),
+    KEY idx_seckill_user_id (user_id),
+    KEY idx_seckill_product_id (product_id),
+    CONSTRAINT fk_seckill_order_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT fk_seckill_order_product FOREIGN KEY (product_id) REFERENCES products(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
