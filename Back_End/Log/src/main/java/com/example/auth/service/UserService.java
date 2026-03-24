@@ -5,6 +5,7 @@ import com.example.auth.model.User;
 import com.example.auth.util.PasswordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 
@@ -14,18 +15,22 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
+    @Transactional(readOnly = true)
     public User findById(Long id) {
         return userMapper.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public User findByPhoneNumber(String phoneNumber) {
         return userMapper.findByPhoneNumber(phoneNumber);
     }
 
+    @Transactional(readOnly = true)
     public User findByUserName(String username) {
         return userMapper.findByUserName(username);
     }
 
+    @Transactional
     public boolean registerUser(String username, String phoneNumber, String rawPassword) {
         if (userMapper.findByUserName(username) != null) {
             return false;
@@ -46,6 +51,7 @@ public class UserService {
         return userMapper.insertUser(user) > 0;
     }
 
+    @Transactional
     public User validateLogin(String username, String rawPassword) {
         User user = userMapper.findByUserName(username);
         if (user == null) {

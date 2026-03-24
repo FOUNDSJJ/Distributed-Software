@@ -5,6 +5,7 @@ import com.example.auth.model.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.List;
@@ -26,6 +27,7 @@ public class ProductService {
     @Autowired
     private JsonUtil jsonUtil;
 
+    @Transactional(readOnly = true)
     public Product getProductById(Long id) {
         String cacheKey = PRODUCT_CACHE_PREFIX + id;
 
@@ -79,14 +81,17 @@ public class ProductService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Product getProductByName(String name) {
         return productMapper.findByName(name);
     }
 
+    @Transactional(readOnly = true)
     public List<Product> getAllProducts() {
         return productMapper.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Integer getProductNumber() {
         return getAllProducts().size();
     }

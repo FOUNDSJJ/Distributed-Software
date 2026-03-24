@@ -1,0 +1,11 @@
+STOP REPLICA;
+CHANGE REPLICATION SOURCE TO
+    SOURCE_HOST = 'mysql-master',
+    SOURCE_PORT = 3306,
+    SOURCE_USER = 'repl',
+    SOURCE_PASSWORD = 'replPassword',
+    SOURCE_AUTO_POSITION = 1,
+    GET_SOURCE_PUBLIC_KEY = 1;
+START REPLICA;
+SET GLOBAL read_only = ON;
+SET GLOBAL super_read_only = ON;
