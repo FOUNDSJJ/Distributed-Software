@@ -418,6 +418,88 @@
 
 ### 1. 搭建MySQL的读写分离环境，在代码中测试读写分离效果
 
+该部分基于当前 `Spring Boot + MyBatis + MySQL` 后端项目实现了 MySQL 主从复制与应用层读写分离。整体方案为：将 `mysql-master` 作为写库，将 `mysql-slave` 作为读库，后端通过动态数据源根据事务的只读属性自动路由到不同数据源，从而实现“写请求进主库、读请求进从库”的效果。
+
+**1. 读写分离功能实现**
+
+相关文件或目录：
+- `Back_End/Log/src/main/resources/application.properties`
+- `Back_End/Log/src/main/java/com/example/auth/config/DataSourceConfig.java`
+- `Back_End/Log/src/main/java/com/example/auth/config/RoutingDataSource.java`
+- `Back_End/Log/src/main/java/com/example/auth/service/ProductService.java`
+- `Back_End/Log/src/main/java/com/example/auth/service/UserService.java`
+- `Back_End/Log/src/main/java/com/example/auth/service/ProductReplicationService.java`
+- `Back_End/Log/src/main/java/com/example/auth/controller/ProductController.java`
+- `Back_End/Log/Dockerfile`
+- `docker-compose.yml`
+- `Database/MySQL_RW/master/my.cnf`
+- `Database/MySQL_RW/master/init.sql`
+- `Database/MySQL_RW/master/replication-user.sql`
+- `Database/MySQL_RW/slave/my.cnf`
+- `Database/MySQL_RW/slave/start-replication.sql`
+
+实现说明：
+- `application.properties` 中新增了 `spring.datasource.write.*` 和 `spring.datasource.read.*` 两套配置，分别对应主库和从库。后端启动时会同时初始化这两个数据源。
+- `DataSourceConfig.java` 负责注册 `writeDataSource`、`readDataSource` 以及默认的路由数据源 `dataSource`，并额外注册 `writeJdbcTemplate` 和 `readJdbcTemplate`，方便在测试接口中直接观察主从节点的读写情况。
+- `RoutingDataSource.java` 继承 `AbstractRoutingDataSource`，并通过 `TransactionSynchronizationManager.isCurrentTransactionReadOnly()` 判断当前事务是否为只读事务。如果是只读事务则路由到 `read`，否则路由到 `write`。
+- `ProductService.java` 中的查询方法 `getProductById`、`getProductByName`、`getAllProducts` 都标注为 `@Transactional(readOnly = true)`，因此这些商品查询会优先路由到从库。
+- `UserService.java` 中的 `findById`、`findByPhoneNumber`、`findByUserName` 被标注为只读事务，而 `registerUser` 和 `validateLogin` 使用普通 `@Transactional`，因此注册、登录中的插入和更新操作会路由到主库。
+- `ProductReplicationService.java` 是专门为读写分离实验新增的服务类。它直接通过 `writeJdbcTemplate` 对主库执行 `UPDATE products SET stock = ?`，再分别使用 `writeJdbcTemplate` 和 `readJdbcTemplate` 去查询主库和从库中的商品数据与节点信息，从而直观地对比两者的差异。
+- `ProductController.java` 中新增了 `/api/products/replication-status/{id}` 和 `/api/products/replication-test/{id}` 两个接口。前者用于查看当前主从节点的商品状态，后者用于执行一次写入并立即比较主从查询结果。
+- `Database/MySQL_RW/master/my.cnf` 用于配置主库的 `server-id`、`log-bin`、`gtid_mode` 等参数，使主库具备可被复制的能力。
+- `Database/MySQL_RW/master/replication-user.sql` 用于在主库中创建复制账号 `repl`，供从库连接主库拉取 binlog。
+- `Database/MySQL_RW/slave/my.cnf` 用于配置从库的 `server-id`、`relay-log`、`gtid_mode` 等参数，使从库具备接受复制的能力。
+- `Database/MySQL_RW/slave/start-replication.sql` 中通过 `CHANGE REPLICATION SOURCE TO ...` 和 `START REPLICA` 建立主从复制关系，并在复制启动后打开 `read_only` 和 `super_read_only`，使从库只承担读请求。
+- `docker-compose.yml` 将 `mysql-master`、`mysql-slave`、`mysql-replica-init`、`backend1`、`backend2`、`redis` 和 `nginx` 组合在同一套部署环境中。其中 `backend1` 和 `backend2` 都通过环境变量指定写库为 `mysql-master`，读库为 `mysql-slave`，因此在 Docker 环境中可以直接运行读写分离。
+- `Back_End/Log/Dockerfile` 用于将后端打包为容器镜像，便于在 WSL2 + Docker 环境中统一部署并测试多个后端实例。
+
+**2. 读写分离功能测试**
+
+为了验证系统已经实现“写主库、读从库”以及“主从复制延迟后最终一致”的效果，本项目在 WSL2 + Docker 环境中通过 `curl` 对后端接口进行了三次连续测试。整个过程中，所有写操作都发生在主库，从库则依靠 MySQL 主从复制进行异步同步。
+
+测试步骤与结果如下：
+
+1. 首先查询当前主从数据库中商品 `id = 1` 的初始状态：
+
+```bash
+curl http://localhost/api/products/replication-status/1
+```
+
+查询结果如下图所示：
+
+![读写分离测试（查询商品初始状态）](graph/读写分离测试（查询商品初始状态）.png)
+
+此时返回结果中可以同时看到 `writeNode`、`writeData`、`readNode` 和 `readData`，表明当前接口已经能够分别读取主库和从库中的商品信息。在初始状态下，两者的 `stock` 数值一致。
+
+2. 接着对同一个商品执行写入操作，将 `stock` 修改为 `77`，并在写入完成后立马同时读取主从数据库信息：
+
+```bash
+curl -X POST http://localhost/api/products/replication-test/1 \
+  -H "Content-Type: application/json" \
+  -d '{"stock":77,"wait_millis":0}'
+```
+
+测试结果如下图所示：
+
+![读写分离测试（写入后立马读取）](graph/读写分离测试（写入后立马读取）.png)
+
+可以观察到，主库中的 `writeData.stock` 已经变为 `77`，说明写操作已成功写入主库；但此时从库中的 `readData.stock` 还未立刻变为 `77`，说明从库读取的仍然是复制前的数据，也就直观地体现了读写分离场景下的主从复制延迟。
+
+3. 最后间隔一段时间后，再次查询该商品的主从状态：
+
+```bash
+curl http://localhost/api/products/replication-status/1
+```
+
+测试结果如下图所示：
+
+![读写分离测试（写入后间隔一段时间读取）](graph/读写分离测试（写入后间隔一段时间读取）.png)
+
+可以看到，经过一小段时间后，从库中的 `readData.stock` 也变为了 `77`，表明主库的写入已经通过 MySQL 主从复制成功同步到了从库。
+
+综合上述三次测试可以得出结论：本项目已经在 Docker 部署环境中成功搭建 MySQL 主从复制与应用层读写分离机制，能够在代码中观察到“写入先到主库、查询优先读从库、随后主从逐步达到一致”的实际效果。
+
+
 ### 2. 基于ElasticSearch实现商品搜索功能
 
 为便于展示搜索模块的交互效果，本节从商品详情展示、查询成功反馈和查询失败反馈三个场景进行说明，整体页面设计保持信息集中、状态明确、交互闭环的原则。
@@ -446,3 +528,4 @@
 - 提示信息语义清晰，便于用户继续修改关键字并重新发起查询。
 - 正常场景与异常场景均有对应页面反馈，体现了系统在交互层面的完整性与容错性。
 
+---
