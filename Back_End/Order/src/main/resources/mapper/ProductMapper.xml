@@ -20,6 +20,13 @@
         WHERE id = #{id}
     </select>
 
+    <select id="findByName" parameterType="string" resultMap="ProductResultMap">
+        SELECT id, name, price, stock, description, created_at, updated_at
+        FROM products
+        WHERE name = #{name}
+        LIMIT 1
+    </select>
+
     <update id="deductStock" parameterType="long">
         UPDATE products
         SET stock = stock - 1

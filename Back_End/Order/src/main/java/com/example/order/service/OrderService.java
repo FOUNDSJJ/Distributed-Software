@@ -67,10 +67,19 @@ public class OrderService {
     @Autowired
     private OrderMapper orderMapper;
 
-    public SubmitOrderResult submitSeckillOrder(Long userId, Long productId) {
-        Product product = productMapper.findById(productId);
+    public SubmitOrderResult submitSeckillOrder(Long userId, String productName) {
+        if (productName == null || productName.isBlank()) {
+            return SubmitOrderResult.failed("product_name must not be blank");
+        }
+
+        Product product = productMapper.findByName(productName.trim());
         if (product == null) {
             return SubmitOrderResult.failed("Product not found");
+        }
+
+        Long productId = product.getId();
+        if (productId == null) {
+            return SubmitOrderResult.failed("Product id is missing");
         }
 
         long orderId = orderIdGenerator.nextId();

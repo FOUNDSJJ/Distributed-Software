@@ -37,12 +37,12 @@ public class SeckillOrderController {
             return Map.of("success", false, "message", "User is not logged in");
         }
 
-        Object productIdValue = request.get("product_id");
-        if (!(productIdValue instanceof Number productIdNumber)) {
-            return Map.of("success", false, "message", "product_id must be a number");
+        Object productNameValue = request.get("product_name");
+        if (!(productNameValue instanceof String productName) || productName.isBlank()) {
+            return Map.of("success", false, "message", "product_name must not be blank");
         }
 
-        OrderService.SubmitOrderResult result = orderService.submitSeckillOrder(userId, productIdNumber.longValue());
+        OrderService.SubmitOrderResult result = orderService.submitSeckillOrder(userId, productName);
         if (!result.isSuccess()) {
             return Map.of("success", false, "message", result.getMessage());
         }

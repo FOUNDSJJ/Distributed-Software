@@ -18,16 +18,28 @@ function formatPrice(price) {
   return `￥${numericPrice.toFixed(2)}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function createProductCard(product) {
+  const productName = String(product.name ?? "");
+  const encodedProductName = encodeURIComponent(productName);
+
   return `
     <div class="product">
       <div class="img-container">
-        <img src="../assets/css/images/product.png" alt="${product.name}" />
+        <img src="../assets/css/images/product.png" alt="${escapeHtml(productName)}" />
       </div>
       <div class="content">
-        <h3 class="name">${product.name}</h3>
+        <h3 class="name">${escapeHtml(productName)}</h3>
         <p class="stock">余量：${product.stock}</p>
-        <p class="description">${product.description}</p>
+        <p class="description">${escapeHtml(product.description ?? "")}</p>
         <div class="rate">
           <i class="fa-solid fa-star"></i>
           <i class="fa-solid fa-star"></i>
@@ -35,8 +47,17 @@ function createProductCard(product) {
           <i class="fa-solid fa-star"></i>
         </div>
         <span class="price">${formatPrice(product.price)}</span>
-        <div class="product-cart">
-          <i class="fa-solid fa-cart-arrow-down"></i>
+        <div class="product-actions">
+          <button
+            type="button"
+            class="product-order-btn"
+            data-product-name="${encodedProductName}"
+          >
+            立即下单
+          </button>
+          <div class="product-cart">
+            <i class="fa-solid fa-cart-arrow-down"></i>
+          </div>
         </div>
       </div>
     </div>
