@@ -1,14 +1,14 @@
-# Docker Deployment Guide
+# Docker 部署说明
 
-## 1. Project Structure
+## 1. 项目结构
 
-Deploy the project from the repository root, for example:
+当前项目建议从仓库根目录进行部署，例如：
 
 ```text
 /home/Distributed-Software
 ```
 
-Current backend and deployment layout:
+当前后端与部署相关目录结构如下：
 
 ```text
 Distributed-Software/
@@ -42,21 +42,21 @@ Distributed-Software/
 └─ Docker-Deployment.md
 ```
 
-## 2. Service Overview
+## 2. 当前部署服务说明
 
-The current deployment includes:
+当前 Docker 部署包含以下服务：
 
-- `mysql-master`: MySQL primary database
-- `mysql-slave`: MySQL replica database
-- `mysql-replica-init`: initializes master-slave replication
-- `redis`: cache, session, and seckill stock state
-- `kafka`: asynchronous order queue
-- `backend1`: `Back_End/Log` instance 1
-- `backend2`: `Back_End/Log` instance 2
-- `backend-order`: `Back_End/Order` seckill order service
-- `nginx`: static frontend hosting and API reverse proxy
+- `mysql-master`：MySQL 主库
+- `mysql-slave`：MySQL 从库
+- `mysql-replica-init`：主从复制初始化服务
+- `redis`：缓存、会话、秒杀库存与幂等状态存储
+- `kafka`：秒杀订单异步消息队列
+- `backend1`：`Back_End/Log` 第一个实例
+- `backend2`：`Back_End/Log` 第二个实例
+- `backend-order`：`Back_End/Order` 秒杀下单后端
+- `nginx`：前端静态页面托管与 API 反向代理
 
-Port mapping:
+当前端口映射如下：
 
 - `3307 -> mysql-master:3306`
 - `3308 -> mysql-slave:3306`
@@ -67,40 +67,40 @@ Port mapping:
 - `8083 -> backend-order:9091`
 - `80 -> nginx:80`
 
-## 3. Database Initialization
+## 3. 数据库初始化
 
-### 3.1 Database Name
+### 3.1 数据库名称
 
-All services use the same database:
+当前所有后端统一使用同一个数据库：
 
 ```sql
 distributed_software
 ```
 
-### 3.2 Tables
+### 3.2 数据表
 
-The master initialization script is:
+当前主库初始化脚本位于：
 
 [`Database/MySQL_RW/master/init.sql`](/d:/Private/Grade_3/Distributed-Software-HW/Database/MySQL_RW/master/init.sql)
 
-It creates the following tables:
+该脚本会创建以下数据表：
 
 - `users`
 - `products`
 - `seckill_orders`
 
-The `seckill_orders` table supports:
+其中 `seckill_orders` 用于支持：
 
-- snowflake-style long order IDs
-- one user can seckill one product only once
-- order lookup by `order_no`
-- order lookup by `user_id`
+- 雪花算法生成的长整型订单号
+- 同一用户同一商品只能秒杀一次
+- 按订单号查询订单
+- 按用户 ID 查询订单
 
-### 3.3 Important Note About Existing Volumes
+### 3.3 旧数据卷注意事项
 
-`init.sql` is only executed automatically when the MySQL data volume is created for the first time.
+`init.sql` 只会在 MySQL 数据卷第一次创建时自动执行。
 
-If you added `seckill_orders` after MySQL had already been started before, you must create it manually in the master database:
+如果你的 MySQL 容器和数据卷在新增 `seckill_orders` 表之前就已经存在，那么即使你后来修改了 `init.sql`，该表也不会自动补建。这种情况下需要手动在主库中执行建表语句：
 
 ```bash
 docker exec -it mysql-master mysql -uroot -pPassword
@@ -126,41 +126,41 @@ CREATE TABLE IF NOT EXISTS seckill_orders (
 );
 ```
 
-Replication will sync the table from master to slave if replication is working normally.
+如果主从复制工作正常，该表会从主库自动同步到从库。
 
-### 3.4 Check Tables
+### 3.4 检查数据表
 
-Check tables in the master database:
+检查主库：
 
 ```bash
 docker exec -it mysql-master mysql -uroot -pPassword -e "USE distributed_software; SHOW TABLES;"
 ```
 
-Check tables in the slave database:
+检查从库：
 
 ```bash
 docker exec -it mysql-slave mysql -uroot -pPassword -e "USE distributed_software; SHOW TABLES;"
 ```
 
-## 4. Backend Build
+## 4. 后端构建
 
-Build the two backend jars before building Docker images.
+部署前需要先分别构建 `Log` 和 `Order` 两个后端。
 
-### 4.1 Build `Log`
+### 4.1 构建 `Log`
 
 ```bash
 cd /home/Distributed-Software/Back_End/Log
 mvn clean package -DskipTests
 ```
 
-### 4.2 Build `Order`
+### 4.2 构建 `Order`
 
 ```bash
 cd /home/Distributed-Software/Back_End/Order
 mvn clean package -DskipTests
 ```
 
-### 4.3 Dockerfiles
+### 4.3 当前 Dockerfile
 
 `Back_End/Log/Dockerfile`
 
@@ -204,51 +204,51 @@ EXPOSE 9091
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 ```
 
-## 5. Docker Compose
+## 5. Docker Compose 部署
 
-Current deployment file:
+当前部署文件位于：
 
 [`docker-compose.yml`](/d:/Private/Grade_3/Distributed-Software-HW/docker-compose.yml)
 
-Key points:
+当前部署的关键点如下：
 
-- `backend1` and `backend2` are built from `./Back_End/Log`
-- `backend-order` is built from `./Back_End/Order`
-- Kafka uses `apache/kafka:3.7.1`
-- `backend-order` depends on MySQL, Redis, and Kafka
-- Nginx serves the frontend and proxies API requests
+- `backend1` 和 `backend2` 都从 `./Back_End/Log` 构建
+- `backend-order` 从 `./Back_End/Order` 构建
+- Kafka 使用 `apache/kafka:3.7.1`
+- `backend-order` 依赖 MySQL、Redis 和 Kafka
+- Nginx 负责前端静态资源托管以及 API 反向代理
 
-Start all services:
+启动全部服务：
 
 ```bash
 cd /home/Distributed-Software
 docker compose up -d --build
 ```
 
-Start infrastructure only:
+只启动基础设施：
 
 ```bash
 docker compose up -d mysql-master mysql-slave mysql-replica-init redis kafka
 ```
 
-Start only the order backend after rebuilding:
+只重新构建并启动秒杀订单后端：
 
 ```bash
 docker compose up -d --build backend-order
 ```
 
-## 6. Nginx Reverse Proxy
+## 6. Nginx 反向代理说明
 
-Current Nginx config:
+当前 Nginx 配置位于：
 
 [`nginx/conf.d/default.conf`](/d:/Private/Grade_3/Distributed-Software-HW/nginx/conf.d/default.conf)
 
-Important routes:
+当前代理规则如下：
 
-- `/api/` -> load balance to `backend1` and `backend2`
-- `/api/seckill/orders` -> route to `backend-order`
+- `/api/` 转发到 `backend1` 和 `backend2`
+- `/api/seckill/orders` 单独转发到 `backend-order`
 
-Relevant config:
+关键配置如下：
 
 ```nginx
 location /api/seckill/orders {
@@ -266,17 +266,17 @@ location /api/ {
 }
 ```
 
-After modifying Nginx config:
+修改 Nginx 配置后，需要重启 Nginx：
 
 ```bash
 docker compose restart nginx
 ```
 
-## 7. Seckill Order Flow
+## 7. 当前秒杀下单流程
 
-### 7.1 Current Frontend Request
+### 7.1 前端请求格式
 
-The frontend product page sends:
+当前前端商品页点击“立即下单”按钮后，会发送如下请求体：
 
 ```json
 {
@@ -284,87 +284,87 @@ The frontend product page sends:
 }
 ```
 
-The request is sent to:
+请求接口为：
 
 ```text
 POST /api/seckill/orders
 ```
 
-with browser cookies included.
+请求会携带浏览器中的 Cookie。
 
-### 7.2 Current Backend Behavior
+### 7.2 后端处理逻辑
 
-The order backend:
+当前秒杀下单后端的处理流程为：
 
-- reads `SESSIONID` from cookie
-- resolves the current logged-in user from Redis
-- finds the product by `product_name`
-- uses Redis to do stock deduction and duplicate-order guard
-- pushes order creation to Kafka
-- creates the order asynchronously in MySQL
+- 从 Cookie 中读取 `SESSIONID`
+- 通过 Redis 会话解析当前登录用户
+- 根据 `product_name` 查询商品
+- 通过 Redis 完成库存扣减和同用户去重
+- 将下单请求写入 Kafka
+- 由消费者异步创建订单并写入 MySQL
 
-### 7.3 Order Query
+### 7.3 订单查询接口
 
-Query by order ID:
+按订单号查询：
 
 ```text
 GET /api/seckill/orders/{orderId}
 ```
 
-Query by user ID:
+按用户 ID 查询：
 
 ```text
 GET /api/seckill/orders?userId=1
 ```
 
-## 8. Common Commands
+## 8. 常用命令
 
-### 8.1 Check Running Containers
+### 8.1 查看容器状态
 
 ```bash
 docker compose ps
 ```
 
-### 8.2 Check Backend Logs
+### 8.2 查看后端日志
 
 ```bash
 docker compose logs -f backend1 backend2 backend-order
 ```
 
-### 8.3 Check Kafka Logs
+### 8.3 查看 Kafka 日志
 
 ```bash
 docker logs kafka --tail 200
 ```
 
-### 8.4 Check Nginx Logs
+### 8.4 查看 Nginx 日志
 
 ```bash
 docker logs nginx --tail 100
 ```
 
-### 8.5 Restart a Single Service
+### 8.5 重启单个服务
 
 ```bash
 docker compose restart backend-order
 docker compose restart nginx
 ```
 
-### 8.6 Stop All Services
+### 8.6 停止全部服务
 
 ```bash
 docker compose down
 ```
 
-### 8.7 Rebuild Without Cache
+### 8.7 无缓存重建
 
 ```bash
 docker compose build --no-cache
 ```
 
-### 8.8 Remove Old Volumes
+### 8.8 删除旧数据卷
 
-Use this only when you want to reinitialize MySQL data completely:
+仅当你希望重新初始化 MySQL 数据时使用：
 
 ```bash
 docker compose down
@@ -372,66 +372,69 @@ docker volume rm distributed-software_mysql_master_data
 docker volume rm distributed-software_mysql_slave_data
 ```
 
-## 9. Troubleshooting
+## 9. 常见问题排查
 
-### 9.1 `mysql-master` Cannot Be Resolved in IDEA
+### 9.1 在 IDEA 中运行后端提示 `mysql-master` 无法解析
 
-If you run backend services directly in IDEA, `mysql-master` is not a valid host outside Docker Compose.
+如果你不是在 Docker 中运行后端，而是在 IDEA 中直接运行，那么 `mysql-master` 这种容器内主机名对本机 Java 进程无效。
 
-Use local ports instead:
+此时应改用宿主机端口：
 
-- MySQL master: `127.0.0.1:3307`
-- MySQL slave: `127.0.0.1:3308`
-- Redis: `127.0.0.1:6379`
-- Kafka: `127.0.0.1:9092`
+- MySQL 主库：`127.0.0.1:3307`
+- MySQL 从库：`127.0.0.1:3308`
+- Redis：`127.0.0.1:6379`
+- Kafka：`127.0.0.1:9092`
 
-### 9.2 Frontend Clicks But Order Backend Has No Log
+### 9.2 前端点击下单按钮但后端没有日志
 
-Check:
+建议检查以下内容：
 
-- page is opened from `http://localhost/...`
-- Nginx has been restarted after config changes
-- `/api/seckill/orders` is correctly proxied to `backend-order`
-- browser developer tools show the real request URL and response
+- 页面是否从 `http://localhost/...` 打开
+- Nginx 是否在修改配置后已重启
+- `/api/seckill/orders` 是否已正确代理到 `backend-order`
+- 浏览器开发者工具中请求的真实 URL 和返回内容
 
-### 9.3 Order Stays in `QUEUED`
+### 9.3 订单一直停留在 `QUEUED`
 
-Check:
+建议检查：
 
-- Kafka is running
-- `seckill-order-topic` exists
-- `backend-order` logs show consumer startup
-- Kafka and order service were rebuilt after code changes
+- Kafka 是否正常运行
+- `seckill-order-topic` 是否存在
+- `backend-order` 日志中消费者是否正常启动
+- Kafka 与 `backend-order` 是否已经按最新代码重新构建部署
 
-### 9.4 Existing MySQL Volume Does Not Contain `seckill_orders`
+### 9.4 旧数据卷中没有 `seckill_orders`
 
-That means MySQL was initialized before the table was added to `init.sql`.
+说明当前 MySQL 数据卷是在新增该表之前创建的。
 
-Create the table manually in `mysql-master`, or delete the old volumes and rebuild the database.
+可以选择：
 
-## 10. Recommended Deployment Sequence
+- 在 `mysql-master` 中手动执行建表语句
+- 删除旧 volume 后重新初始化数据库
+
+## 10. 推荐部署顺序
 
 ```bash
 cd /home/Distributed-Software
 
-# 1. build backend jars if needed
+# 1. 构建两个后端
 cd Back_End/Log && mvn clean package -DskipTests
 cd ../Order && mvn clean package -DskipTests
 cd /home/Distributed-Software
 
-# 2. start all services
+# 2. 启动所有服务
 docker compose up -d --build
 
-# 3. check status
+# 3. 检查运行状态
 docker compose ps
 ```
 
-Access points after deployment:
+部署完成后的访问入口如下：
 
-- frontend: `http://localhost`
-- log backend direct access: `http://localhost:8081` and `http://localhost:8082`
-- order backend direct access: `http://localhost:8083`
-- MySQL master: `127.0.0.1:3307`
-- MySQL slave: `127.0.0.1:3308`
-- Redis: `127.0.0.1:6379`
-- Kafka: `127.0.0.1:9092`
+- 前端首页：`http://localhost`
+- 登录/商品后端直连：`http://localhost:8081`、`http://localhost:8082`
+- 秒杀订单后端直连：`http://localhost:8083`
+- MySQL 主库：`127.0.0.1:3307`
+- MySQL 从库：`127.0.0.1:3308`
+- Redis：`127.0.0.1:6379`
+- Kafka：`127.0.0.1:9092`
