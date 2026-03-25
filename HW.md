@@ -557,3 +557,9 @@ curl http://localhost/api/products/replication-status/1
 数据库层面，`Database/MySQL_RW/master/init.sql` 中新增了 `seckill_orders` 表，字段包含订单号、用户 ID、商品 ID、订单金额、订单状态和时间戳信息，并为 `(user_id, product_id)` 建立唯一索引，用于保证幂等性。部署层面，`docker-compose.yml` 新增了 `kafka` 服务和 `backend-order` 服务，Nginx 配置 `nginx/conf.d/default.conf` 也新增了 `/api/seckill/orders` 到 `backend-order` 的转发规则。前端方面，在 `Front_End/Products/shop.js` 中为动态渲染的商品卡片增加“立即下单”按钮，`Front_End/Products/order.js` 负责携带 Cookie 发起秒杀请求并在页面上展示下单结果，实现了完整的前后端联动。
 
 **界面展示**
+
+- **秒杀下单**：用户点击购买按钮后，系统会将订单加入等待队列，之后由Kafka异步处理订单。
+  ![秒杀下单](./graph/秒杀下单.png)
+
+- **刷新订单**：当Kafka异步处理完订单后，商品的库存会减少相应数量。
+  ![秒杀刷新后截图](./graph/秒杀刷新后截图.png)
