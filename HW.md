@@ -469,7 +469,7 @@ curl http://localhost/api/products/replication-status/1
 
 ![读写分离测试（查询商品初始状态）](graph/读写分离测试（查询商品初始状态）.png)
 
-此时返回结果中可以同时看到 `writeNode`、`writeData`、`readNode` 和 `readData`，表明当前接口已经能够分别读取主库和从库中的商品信息。在初始状态下，两者的 `stock` 数值一致。
+ 此时返回结果中可以同时看到 `writeNode`、`writeData`、`readNode` 和 `readData`，表明当前接口已经能够分别读取主库和从库中的商品信息。在初始状态下，两者的 `stock` 数值一致。
 
 2. 接着对同一个商品执行写入操作，将 `stock` 修改为 `77`，并在写入完成后立马同时读取主从数据库信息：
 
@@ -479,11 +479,11 @@ curl -X POST http://localhost/api/products/replication-test/1 \
   -d '{"stock":77,"wait_millis":0}'
 ```
 
-测试结果如下图所示：
+ 测试结果如下图所示：
 
-![读写分离测试（写入后立马读取）](graph/读写分离测试（写入后立马读取）.png)
+ ![读写分离测试（写入后立马读取）](graph/读写分离测试（写入后立马读取）.png)
 
-可以观察到，主库中的 `writeData.stock` 已经变为 `77`，说明写操作已成功写入主库；但此时从库中的 `readData.stock` 还未立刻变为 `77`，说明从库读取的仍然是复制前的数据，也就直观地体现了读写分离场景下的主从复制延迟。
+  可以观察到，主库中的 `writeData.stock` 已经变为 `77`，说明写操作已成功写入主库；但此时从库中的 `readData.stock` 还未立刻变为 `77`，说明从库读取的仍然是复制前的数据，也就直观地体现了读写分离场景下的主从复制延迟。
 
 3. 最后间隔一段时间后，再次查询该商品的主从状态：
 
@@ -493,24 +493,24 @@ curl http://localhost/api/products/replication-status/1
 
 测试结果如下图所示：
 
-![读写分离测试（写入后间隔一段时间读取）](graph/读写分离测试（写入后间隔一段时间读取）.png)
+ ![读写分离测试（写入后间隔一段时间读取）](graph/读写分离测试（写入后间隔一段时间读取）.png)
 
-可以看到，经过一小段时间后，从库中的 `readData.stock` 也变为了 `77`，表明主库的写入已经通过 MySQL 主从复制成功同步到了从库。
+ 可以看到，经过一小段时间后，从库中的 `readData.stock` 也变为了 `77`，表明主库的写入已经通过 MySQL 主从复制成功同步到了从库。
 
-综合上述三次测试可以得出结论：本项目已经在 Docker 部署环境中成功搭建 MySQL 主从复制与应用层读写分离机制，能够在代码中观察到“写入先到主库、查询优先读从库、随后主从逐步达到一致”的实际效果。
+ 综合上述三次测试可以得出结论：本项目已经在 Docker 部署环境中成功搭建 MySQL 主从复制与应用层读写分离机制，能够在代码中观察到“写入先到主库、查询优先读从库、随后主从逐步达到一致”的实际效果。
 
 
 ### 2. 基于ElasticSearch实现商品搜索功能
 
-为便于展示搜索模块的交互效果，本节从商品详情展示、查询成功反馈和查询失败反馈三个场景进行说明，整体页面设计保持信息集中、状态明确、交互闭环的原则。
+ 为便于展示搜索模块的交互效果，本节从商品详情展示、查询成功反馈和查询失败反馈三个场景进行说明，整体页面设计保持信息集中、状态明确、交互闭环的原则。
 
 **商品详情界面**
 
-![商品详情界面](graph/shop.png)
+ ![商品详情界面](graph/shop.png)
 
-- 商品名称、价格、库存和描述等核心信息集中展示，便于用户快速浏览商品内容。
-- 页面保留明确的查询入口，方便用户围绕商品名称继续执行搜索操作。
-- 商品信息与库存字段同时呈现，能够更直观地体现业务数据之间的关联关系。
+ - 商品名称、价格、库存和描述等核心信息集中展示，便于用户快速浏览商品内容。
+ - 页面保留明确的查询入口，方便用户围绕商品名称继续执行搜索操作。
+ - 商品信息与库存字段同时呈现，能够更直观地体现业务数据之间的关联关系。
 
 **查询成功界面**
 
@@ -522,11 +522,11 @@ curl http://localhost/api/products/replication-status/1
 
 **查询失败界面**
 
-![查询失败界面](graph/search_failed.png)
+ ![查询失败界面](graph/search_failed.png)
 
-- 当商品不存在或未命中搜索条件时，页面能够及时给出失败提示。
-- 提示信息语义清晰，便于用户继续修改关键字并重新发起查询。
-- 正常场景与异常场景均有对应页面反馈，体现了系统在交互层面的完整性与容错性。
+ - 当商品不存在或未命中搜索条件时，页面能够及时给出失败提示。
+ - 提示信息语义清晰，便于用户继续修改关键字并重新发起查询。
+ - 正常场景与异常场景均有对应页面反馈，体现了系统在交互层面的完整性与容错性。
 
 ---
 
@@ -538,23 +538,23 @@ curl http://localhost/api/products/replication-status/1
 
 **实现逻辑**
 
-本次在现有登录、商品查询、Redis 会话和 MySQL 主从读写分离的基础上，新增了独立的秒杀下单后端 `Back_End/Order`，并将秒杀链路拆分为“同步快速校验 + 异步订单创建”两个阶段。用户在前端商品页点击“立即下单”按钮后，浏览器会携带登录后的 `SESSIONID` Cookie 向 `/api/seckill/orders` 发送请求，请求体中只包含商品名称 `product_name`。后端首先通过 Redis 中保存的会话信息识别当前登录用户，再根据商品名称查询对应商品。
+ 本次在现有登录、商品查询、Redis 会话和 MySQL 主从读写分离的基础上，新增了独立的秒杀下单后端 `Back_End/Order`，并将秒杀链路拆分为“同步快速校验 + 异步订单创建”两个阶段。用户在前端商品页点击“立即下单”按钮后，浏览器会携带登录后的 `SESSIONID` Cookie 向 `/api/seckill/orders` 发送请求，请求体中只包含商品名称 `product_name`。后端首先通过 Redis 中保存的会话信息识别当前登录用户，再根据商品名称查询对应商品。
 
-为了应对秒杀高并发场景，真正的库存校验与去重不是直接落到数据库，而是先在 Redis 中完成。系统为每个商品维护秒杀库存键，为每个商品维护一个“已下单用户集合”，并使用 Lua 脚本在 Redis 中原子执行以下操作：检查库存是否存在、判断当前用户是否已经抢购过该商品、库存是否大于 0、成功时扣减库存并记录该用户已参与秒杀，同时写入一个订单处理中状态 `QUEUED`。由于 Lua 脚本在 Redis 中是原子执行的，因此能够避免并发条件下库存超卖和重复下单的问题。
+ 为了应对秒杀高并发场景，真正的库存校验与去重不是直接落到数据库，而是先在 Redis 中完成。系统为每个商品维护秒杀库存键，为每个商品维护一个“已下单用户集合”，并使用 Lua 脚本在 Redis 中原子执行以下操作：检查库存是否存在、判断当前用户是否已经抢购过该商品、库存是否大于 0、成功时扣减库存并记录该用户已参与秒杀，同时写入一个订单处理中状态 `QUEUED`。由于 Lua 脚本在 Redis 中是原子执行的，因此能够避免并发条件下库存超卖和重复下单的问题。
 
-在 Redis 侧预扣库存成功后，系统会使用雪花算法生成全局唯一订单号，并将订单消息写入 Kafka 的 `seckill-order-topic`。这样用户请求就不需要同步等待数据库写入，而是由消息队列承担削峰填谷作用，将高并发的下单请求转化为后端可持续消费的异步消息流。Kafka 消费者在后台监听该主题，读取消息后进入数据库事务：先检查订单号是否已经存在，再检查同一用户和同一商品的组合是否已有订单记录，然后执行数据库库存扣减与订单表插入。数据库中的 `seckill_orders` 表通过 `(user_id, product_id)` 唯一约束再次兜底，保证同一用户同一商品只能成功创建一条订单。
+ 在 Redis 侧预扣库存成功后，系统会使用雪花算法生成全局唯一订单号，并将订单消息写入 Kafka 的 `seckill-order-topic`。这样用户请求就不需要同步等待数据库写入，而是由消息队列承担削峰填谷作用，将高并发的下单请求转化为后端可持续消费的异步消息流。Kafka 消费者在后台监听该主题，读取消息后进入数据库事务：先检查订单号是否已经存在，再检查同一用户和同一商品的组合是否已有订单记录，然后执行数据库库存扣减与订单表插入。数据库中的 `seckill_orders` 表通过 `(user_id, product_id)` 唯一约束再次兜底，保证同一用户同一商品只能成功创建一条订单。
 
-如果 Kafka 发送失败、数据库扣库存失败、商品不存在或消费者处理异常，系统会执行补偿逻辑：将 Redis 中已预扣的库存加回去，移除该用户在商品维度上的秒杀标记，并将订单状态改写为失败状态。这样即使异步阶段出现异常，也能保证最终库存不会长期错误减少，订单数据也不会出现半完成状态。整体上，这套方案实现了“Redis 快速挡流量、Kafka 异步削峰、MySQL 最终一致落库”的秒杀下单流程。
+ 如果 Kafka 发送失败、数据库扣库存失败、商品不存在或消费者处理异常，系统会执行补偿逻辑：将 Redis 中已预扣的库存加回去，移除该用户在商品维度上的秒杀标记，并将订单状态改写为失败状态。这样即使异步阶段出现异常，也能保证最终库存不会长期错误减少，订单数据也不会出现半完成状态。整体上，这套方案实现了“Redis 快速挡流量、Kafka 异步削峰、MySQL 最终一致落库”的秒杀下单流程。
 
 **代码概括介绍**
 
-秒杀下单后端的核心代码集中在 `Back_End/Order` 模块中。`SeckillOrderController.java` 提供 `/api/seckill/orders` 的下单接口以及订单查询接口，其中下单接口从请求体读取 `product_name`，并从 Cookie 中提取 `SESSIONID` 来识别用户身份。`SessionService.java` 负责根据 Redis 中的会话键值还原当前用户 ID。`ProductMapper.java` 与 `ProductMapper.xml` 新增了按商品名称查询商品的能力，从而将前端传入的商品名称映射为实际商品记录。
+ 秒杀下单后端的核心代码集中在 `Back_End/Order` 模块中。`SeckillOrderController.java` 提供 `/api/seckill/orders` 的下单接口以及订单查询接口，其中下单接口从请求体读取 `product_name`，并从 Cookie 中提取 `SESSIONID` 来识别用户身份。`SessionService.java` 负责根据 Redis 中的会话键值还原当前用户 ID。`ProductMapper.java` 与 `ProductMapper.xml` 新增了按商品名称查询商品的能力，从而将前端传入的商品名称映射为实际商品记录。
 
-真正的秒杀核心逻辑位于 `OrderService.java`。该类内部定义了 Redis Lua 脚本，用于一次性完成库存检查、重复下单检查、库存扣减、下单状态写入等操作；同时封装了订单状态键、库存键、用户去重键的命名规则。下单入口 `submitSeckillOrder` 会先根据商品名称查询商品，再生成订单号，执行 Redis 预扣减逻辑，预扣减成功后构造 `SeckillOrderMessage` 并投递到 Kafka。若 Kafka 投递失败，则调用补偿方法回滚 Redis 中的预扣减状态。订单消费者 `SeckillOrderConsumer.java` 通过 `@KafkaListener` 监听秒杀主题，读取消息后调用 `createOrder` 进入数据库事务，完成库存最终扣减和订单持久化。
+ 真正的秒杀核心逻辑位于 `OrderService.java`。该类内部定义了 Redis Lua 脚本，用于一次性完成库存检查、重复下单检查、库存扣减、下单状态写入等操作；同时封装了订单状态键、库存键、用户去重键的命名规则。下单入口 `submitSeckillOrder` 会先根据商品名称查询商品，再生成订单号，执行 Redis 预扣减逻辑，预扣减成功后构造 `SeckillOrderMessage` 并投递到 Kafka。若 Kafka 投递失败，则调用补偿方法回滚 Redis 中的预扣减状态。订单消费者 `SeckillOrderConsumer.java` 通过 `@KafkaListener` 监听秒杀主题，读取消息后调用 `createOrder` 进入数据库事务，完成库存最终扣减和订单持久化。
 
-为了提升部署稳定性，`SeckillOrderProducer.java` 中的消息发送被改为同步确认发送结果，只有 Kafka 真正接收成功后才认为请求进入异步处理队列；`KafkaTopicConfig.java` 会在服务启动时自动创建 `seckill-order-topic`，减少因主题不存在导致的消费异常。订单 ID 由 `OrderIdGenerator.java` 负责生成，其实现采用雪花算法思路，保证在单节点部署下也能生成趋势递增且全局唯一的长整型订单号。
+ 为了提升部署稳定性，`SeckillOrderProducer.java` 中的消息发送被改为同步确认发送结果，只有 Kafka 真正接收成功后才认为请求进入异步处理队列；`KafkaTopicConfig.java` 会在服务启动时自动创建 `seckill-order-topic`，减少因主题不存在导致的消费异常。订单 ID 由 `OrderIdGenerator.java` 负责生成，其实现采用雪花算法思路，保证在单节点部署下也能生成趋势递增且全局唯一的长整型订单号。
 
-数据库层面，`Database/MySQL_RW/master/init.sql` 中新增了 `seckill_orders` 表，字段包含订单号、用户 ID、商品 ID、订单金额、订单状态和时间戳信息，并为 `(user_id, product_id)` 建立唯一索引，用于保证幂等性。部署层面，`docker-compose.yml` 新增了 `kafka` 服务和 `backend-order` 服务，Nginx 配置 `nginx/conf.d/default.conf` 也新增了 `/api/seckill/orders` 到 `backend-order` 的转发规则。前端方面，在 `Front_End/Products/shop.js` 中为动态渲染的商品卡片增加“立即下单”按钮，`Front_End/Products/order.js` 负责携带 Cookie 发起秒杀请求并在页面上展示下单结果，实现了完整的前后端联动。
+ 数据库层面，`Database/MySQL_RW/master/init.sql` 中新增了 `seckill_orders` 表，字段包含订单号、用户 ID、商品 ID、订单金额、订单状态和时间戳信息，并为 `(user_id, product_id)` 建立唯一索引，用于保证幂等性。部署层面，`docker-compose.yml` 新增了 `kafka` 服务和 `backend-order` 服务，Nginx 配置 `nginx/conf.d/default.conf` 也新增了 `/api/seckill/orders` 到 `backend-order` 的转发规则。前端方面，在 `Front_End/Products/shop.js` 中为动态渲染的商品卡片增加“立即下单”按钮，`Front_End/Products/order.js` 负责携带 Cookie 发起秒杀请求并在页面上展示下单结果，实现了完整的前后端联动。
 
 **界面展示**
 
@@ -563,3 +563,16 @@ curl http://localhost/api/products/replication-status/1
 
 - **刷新订单**：当Kafka异步处理完订单后，商品的库存会减少相应数量。
   ![秒杀刷新后截图](./graph/秒杀刷新后截图.png)
+
+# 第五次作业
+## 事务与一致性
+### 1、在秒杀下单时，基于Redis实现库存预扣减，防超卖、限购
+
+ 当前秒杀下单先经过 `Back_End/Order/src/main/java/com/example/order/service/OrderService.java` 中的 Redis Lua 脚本处理，再进入后续异步链路。脚本会同时检查商品库存键、商品维度的已下单用户集合，以及用户对应的待处理订单键：若库存不存在则直接失败，若用户已参与过该商品秒杀则拒绝重复下单，若库存不足则返回售空；只有全部条件满足时，才会原子执行库存减一、将用户写入限购集合、写入待处理订单标记并设置 Redis 订单状态为 `QUEUED`。这样把“查库存、扣库存、限购去重”合并为一个原子操作，在高并发下有效防止超卖和重复抢购。相关文件主要包括 `OrderService.java`、`SeckillOrderController.java`、`StockWarmupService.java`、`Front_End/Products/order.js` 和 `Database/MySQL_RW/master/init.sql`。
+
+### 2、采用基于消息的一致性或TCC事务保障数据一致性
+
+- 下单+库存扣减一致性
+ 本项目采用基于消息的一致性方案处理“下单 + 库存扣减”。用户请求先在 Redis 中完成预扣减并生成待处理订单，然后订单服务发送扣库存消息到 Kafka；库存服务消费消息后真正扣减数据库库存，并回传扣减结果消息。订单服务再根据结果把订单从 `PENDING_STOCK` 更新为 `CREATED`，或在失败时关闭订单并回滚 Redis 预占库存、去重集合和待处理标记，从而保证订单与库存状态最终一致。
+- 订单支付+ 订单状态更新一致性
+ 订单支付链路同样使用消息一致性保证状态正确流转。订单服务在发起支付前先将订单状态从 `CREATED` 或 `PAY_FAILED` 原子更新为 `PAYING`，随后发送支付请求消息；支付结果返回后，由 `PaymentResultConsumer.java` 消费回执并调用 `OrderService.handlePaymentResult`，将订单状态更新为 `PAID` 或 `PAY_FAILED`，同时刷新 Redis 中的订单状态。这样可以避免“支付成功但订单状态未更新”以及重复支付造成的状态混乱。
