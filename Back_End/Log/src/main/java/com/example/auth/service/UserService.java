@@ -32,6 +32,7 @@ public class UserService {
 
     @Transactional
     public boolean registerUser(String username, String phoneNumber, String rawPassword) {
+        // 再次校验唯一性，避免并发场景下写入重复用户
         if (userMapper.findByUserName(username) != null) {
             return false;
         }
@@ -43,6 +44,7 @@ public class UserService {
         User user = new User();
         user.setUsername(username);
         user.setPhoneNumber(phoneNumber);
+        // 数据库存储密码摘要，不直接保存明文密码
         user.setPasswordHash(PasswordUtil.hashPassword(rawPassword));
         user.setStatus(1);
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
@@ -53,6 +55,7 @@ public class UserService {
 
     @Transactional
     public User validateLogin(String username, String rawPassword) {
+        // 登录校验依次检查用户存在性、状态和密码摘要
         User user = userMapper.findByUserName(username);
         if (user == null) {
             return null;
@@ -66,6 +69,7 @@ public class UserService {
             return null;
         }
 
+        // 登录成功后刷新最后登录时间
         userMapper.updateLastLogin(user.getId(), new Timestamp(System.currentTimeMillis()));
         return user;
     }

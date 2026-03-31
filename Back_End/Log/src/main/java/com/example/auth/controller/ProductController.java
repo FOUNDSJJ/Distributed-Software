@@ -28,6 +28,7 @@ public class ProductController {
 
     @GetMapping("/info")
     public Map<String, Object> getAllProducts() {
+        // 保持返回顺序稳定，便于前端按顺序渲染商品列表
         List<Product> products = productService.getAllProducts();
         if (products == null || products.isEmpty()) {
             return Map.of("success", false, "message", "No products found");
@@ -56,6 +57,7 @@ public class ProductController {
 
     @GetMapping("/by-name")
     public Map<String, Object> getProductByName(@RequestParam String name) {
+        // 前端搜索商品时按名称精确查询
         Product product = productService.getProductByName(name);
         if (product == null) {
             return Map.of("success", false, "message", "Product not found");
@@ -65,6 +67,7 @@ public class ProductController {
 
     @GetMapping("/replication-status/{id:\\d+}")
     public Map<String, Object> getReplicationStatus(@PathVariable("id") Long id) {
+        // 用于观察主从复制下单次查询结果
         return Map.of(
                 "success", true,
                 "data", productReplicationService.inspectProduct(id)
@@ -76,6 +79,7 @@ public class ProductController {
             @PathVariable("id") Long id,
             @RequestBody Map<String, Object> request
     ) {
+        // 允许指定等待时间，便于验证复制延迟场景
         Object stockValue = request.get("stock");
         if (!(stockValue instanceof Number stockNumber)) {
             return Map.of("success", false, "message", "stock must be a number");

@@ -15,4 +15,12 @@ public interface OrderMapper {
     SeckillOrder findByUserIdAndProductId(@Param("userId") Long userId, @Param("productId") Long productId);
 
     List<SeckillOrder> findByUserId(@Param("userId") Long userId);
+
+    int updateStatus(@Param("orderNo") Long orderNo, @Param("status") String status);
+
+    int updateStatusIfCurrent(@Param("orderNo") Long orderNo,
+                              @Param("currentStatus") String currentStatus,
+                              @Param("targetStatus") String targetStatus);
+
+    List<SeckillOrder> findReservedOrders();
 }

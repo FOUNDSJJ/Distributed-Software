@@ -24,6 +24,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public Map<String, Object> register(@RequestBody Map<String, String> req) {
+        // 注册时先读取并校验基础参数
         String username = req.get("username");
         String phone = req.get("phone_number");
         String password = req.get("password");
@@ -52,6 +53,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> req, HttpServletResponse response) {
+        // 登录成功后创建会话并写入 Cookie
         String username = req.get("username");
         String password = req.get("password");
 
@@ -65,6 +67,7 @@ public class AuthController {
             return Map.of("success", false, "message", "用户名不存在或密码错误，或账号不可用");
         }
 
+        // 会话标识保存在 Redis，中间只向浏览器下发 token
         String token = sessionService.createSession(user.getId());
 
         Cookie cookie = new Cookie("SESSIONID", token);
@@ -88,6 +91,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public Map<String, Object> me(HttpServletRequest request) {
+        // 根据 Cookie 中的会话标识回查当前登录用户
         String token = getTokenFromCookie(request);
         if (token == null) {
             return Map.of("success", false, "message", "未登录");
@@ -113,6 +117,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     public Map<String, Object> logout(HttpServletRequest request, HttpServletResponse response) {
+        // 退出登录时同时清理服务端会话和浏览器 Cookie
         String token = getTokenFromCookie(request);
         if (token != null) {
             sessionService.deleteSession(token);
@@ -129,6 +134,7 @@ public class AuthController {
     }
 
     private String getTokenFromCookie(HttpServletRequest request) {
+        // 统一从请求 Cookie 中提取会话 token
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;

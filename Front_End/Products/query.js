@@ -13,6 +13,7 @@ function setSearchFeedback(message, isError = false) {
 
 if (searchForm && productNameInput) {
   searchForm.addEventListener("submit", function (e) {
+    // 阻止表单刷新页面，改为异步查询
     e.preventDefault();
 
     const productName = productNameInput.value.trim();
@@ -21,6 +22,7 @@ if (searchForm && productNameInput) {
       setSearchFeedback("请输入要查询的商品名称", true);
 
       if (window.shopPage && typeof window.shopPage.loadAllProducts === "function") {
+        // 未输入商品名时恢复默认商品列表
         window.shopPage.loadAllProducts();
       }
 
@@ -29,6 +31,7 @@ if (searchForm && productNameInput) {
 
     setSearchFeedback("正在查询商品...");
 
+    // 按商品名查询单个商品详情
     fetch(`/api/products/by-name?name=${encodeURIComponent(productName)}`, {
       method: "GET",
       credentials: "include",
@@ -49,6 +52,7 @@ if (searchForm && productNameInput) {
         setSearchFeedback(`查询成功！`);
       })
       .catch((err) => {
+        // 查询失败时同步更新页面提示
         console.error("查询商品失败：", err);
         setSearchFeedback("查询商品失败，请稍后重试", true);
 

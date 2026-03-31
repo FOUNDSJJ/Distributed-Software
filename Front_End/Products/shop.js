@@ -4,6 +4,7 @@ const productsContainer = document.getElementById("products-container");
 
 if (iconToggel && navLinks) {
   iconToggel.addEventListener("click", () => {
+    // 移动端点击图标时切换导航显示状态
     navLinks.classList.toggle("show");
   });
 }
@@ -19,6 +20,7 @@ function formatPrice(price) {
 }
 
 function escapeHtml(value) {
+  // 对动态文本做转义，避免直接拼接到 HTML 时出现注入问题
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -30,7 +32,9 @@ function escapeHtml(value) {
 function createProductCard(product) {
   const productName = String(product.name ?? "");
   const encodedProductName = encodeURIComponent(productName);
+  const productId = Number(product.id ?? 0);
 
+  // 商品卡片内容由接口返回的数据动态生成
   return `
     <div class="product">
       <div class="img-container">
@@ -51,13 +55,19 @@ function createProductCard(product) {
           <button
             type="button"
             class="product-order-btn"
+            data-product-id="${productId}"
             data-product-name="${encodedProductName}"
           >
             立即下单
           </button>
-          <div class="product-cart">
-            <i class="fa-solid fa-cart-arrow-down"></i>
-          </div>
+          <button
+            type="button"
+            class="product-pay-btn"
+            data-product-id="${productId}"
+            data-product-name="${encodedProductName}"
+          >
+            支付订单
+          </button>
         </div>
       </div>
     </div>
@@ -86,6 +96,7 @@ function renderProducts(products) {
 }
 
 function loadAllProducts() {
+  // 页面初始化时拉取全部商品信息
   return fetch("/api/products/info", {
     method: "GET",
     credentials: "include",
@@ -109,6 +120,7 @@ function loadAllProducts() {
       renderProducts(products);
     })
     .catch((err) => {
+      // 请求失败时同时输出日志和页面提示
       console.error("获取商品信息失败：", err);
       showMessage("获取商品信息失败，请稍后重试");
     });

@@ -4,6 +4,7 @@
 
 <mapper namespace="com.example.order.mapper.OrderMapper">
 
+    <!-- 订单对象与表字段映射 -->
     <resultMap id="OrderResultMap" type="com.example.order.model.SeckillOrder">
         <id property="orderNo" column="order_no"/>
         <result property="userId" column="user_id"/>
@@ -14,6 +15,7 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <!-- 新增秒杀订单 -->
     <insert id="insert" parameterType="com.example.order.model.SeckillOrder">
         INSERT INTO seckill_orders (
             order_no, user_id, product_id, order_amount, status
@@ -22,12 +24,14 @@
         )
     </insert>
 
+    <!-- 按订单号查询订单 -->
     <select id="findByOrderNo" parameterType="long" resultMap="OrderResultMap">
         SELECT order_no, user_id, product_id, order_amount, status, created_at, updated_at
         FROM seckill_orders
         WHERE order_no = #{orderNo}
     </select>
 
+    <!-- 按用户和商品查询单条订单 -->
     <select id="findByUserIdAndProductId" resultMap="OrderResultMap">
         SELECT order_no, user_id, product_id, order_amount, status, created_at, updated_at
         FROM seckill_orders
@@ -36,11 +40,36 @@
         LIMIT 1
     </select>
 
+    <!-- 查询用户全部订单，按创建时间倒序返回 -->
     <select id="findByUserId" parameterType="long" resultMap="OrderResultMap">
         SELECT order_no, user_id, product_id, order_amount, status, created_at, updated_at
         FROM seckill_orders
         WHERE user_id = #{userId}
         ORDER BY created_at DESC, order_no DESC
+    </select>
+
+    <!-- 直接更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE seckill_orders
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE order_no = #{orderNo}
+    </update>
+
+    <!-- 仅在当前状态匹配时更新订单状态 -->
+    <update id="updateStatusIfCurrent">
+        UPDATE seckill_orders
+        SET status = #{targetStatus},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE order_no = #{orderNo}
+          AND status = #{currentStatus}
+    </update>
+
+    <!-- 查询仍处于有效状态的预占订单 -->
+    <select id="findReservedOrders" resultMap="OrderResultMap">
+        SELECT order_no, user_id, product_id, order_amount, status, created_at, updated_at
+        FROM seckill_orders
+        WHERE status != 'FAILED'
     </select>
 
 </mapper>

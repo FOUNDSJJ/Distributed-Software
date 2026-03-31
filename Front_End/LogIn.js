@@ -5,7 +5,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
     const password = document.getElementById('pwd').value;
     const remember = document.getElementById('remember').checked;
 
-    // 简单前端校验
+    // 先做基础校验，避免无效登录请求发送到后端
     if (!username || !password) {
         alert("用户名和密码不能为空！");
         return;
@@ -14,7 +14,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
     fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ 关键：允许跨域 Cookie 保存
+        credentials: 'include', // 允许浏览器自动保存并携带会话 Cookie
         body: JSON.stringify({ username, password })
     })
     .then(response => response.json())
@@ -22,20 +22,16 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
         if (data.success) {
             alert('登录成功！');
 
-            // ----------------- 存储用户信息 -----------------
+            // 登录成功后按用户选择保存信息
             if (remember) {
-                // 记住密码/用户信息 → localStorage
+                // 持久化保存用户信息
                 localStorage.setItem('user', JSON.stringify(data.user));
             } else {
-                // 临时登录 → sessionStorage
+                // 当前会话内临时保存用户信息
                 sessionStorage.setItem('user', JSON.stringify(data.user));
             }
 
-            // ----------------- Cookie 已经由浏览器保存 -----------------
-            // 后端返回的 SESSIONID Cookie 会自动被浏览器保存（HttpOnly）
-            // JS 无法读取，但浏览器会在后续 fetch 请求自动携带
-
-            // 登录成功跳转
+            // 会话凭证由浏览器维护，这里只负责登录后的页面跳转
             window.location.replace("./Products/shop.html");
 
         } else {
@@ -43,6 +39,7 @@ document.getElementById('LogInForm').addEventListener('submit', function(e) {
         }
     })
     .catch(err => {
+        // 统一处理网络异常和服务端异常
         console.error('网络或服务器错误：', err);
         alert('网络或服务器错误，请重试');
     });

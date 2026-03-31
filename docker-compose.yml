@@ -189,6 +189,28 @@ services:
     ports:
       - "8083:9091"
 
+  backend-inventory:
+    build:
+      context: ./Back_End/Inventory
+      dockerfile: Dockerfile
+    container_name: backend-inventory
+    restart: always
+    environment:
+      MYSQL_DB: distributed_software
+      MYSQL_HOST: mysql-master
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: Password
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_CONSUMER_GROUP: inventory-service-group
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8084:9092"
+
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -197,6 +219,7 @@ services:
       - backend1
       - backend2
       - backend-order
+      - backend-inventory
     ports:
       - "80:80"
     volumes:

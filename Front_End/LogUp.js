@@ -1,14 +1,14 @@
 document.getElementById('registerForm').addEventListener('submit', function(e) {
     e.preventDefault(); // 阻止表单默认提交
 
-    // 获取表单值
+    // 读取表单输入内容
     let username = document.getElementById('username').value.trim();
     let phone_number = document.getElementById('phonenumber').value.trim();
     let password = document.getElementById('pwd').value;
     let confirmPassword = document.getElementById('c_pwd').value;
-    let agree = document.getElementById('agree').checked; // 修正 checkbox 获取方式
+    let agree = document.getElementById('agree').checked; // 复选框需要读取 checked 状态
 
-    // ----------------- 表单校验 -----------------
+    // 提交前先完成基础校验
     if (!agree) {
         alert("请先阅读并同意《用户注册协议》！");
         return;
@@ -19,7 +19,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         return;
     }
 
-    const phoneRegex = /^1[3-9]\d{9}$/;  // 中国手机号正则
+    const phoneRegex = /^1[3-9]\d{9}$/;  // 中国大陆手机号格式校验
     if (!phoneRegex.test(phone_number)) {
         alert("手机号格式不正确！");
         return;
@@ -39,10 +39,10 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         return;
     }
 
-    // ----------------- 提交注册请求 -----------------
-    const registerBtn = document.getElementById('registerBtn'); // 修正 id
+    // 校验通过后再发起注册请求
+    const registerBtn = document.getElementById('registerBtn'); // 与页面按钮 id 保持一致
     registerBtn.disabled = true;
-    registerBtn.value = '注册中...'; // input 用 value 修改文字
+    registerBtn.value = '注册中...'; // input 按钮文本通过 value 更新
 
     fetch('/api/auth/register', {
         method: 'POST',
@@ -66,6 +66,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         }
     })
     .catch(error => {
+        // 记录错误细节，便于排查注册失败原因
         console.error('发生错误：', error);
         alert('注册失败：' + error.message);
     })

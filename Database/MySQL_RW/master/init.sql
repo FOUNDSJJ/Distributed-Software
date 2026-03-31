@@ -1,9 +1,11 @@
+-- 初始化主业务库
 CREATE DATABASE IF NOT EXISTS distributed_software
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
 USE distributed_software;
 
+-- 用户信息表
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 商品信息表
 CREATE TABLE IF NOT EXISTS products (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -27,6 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 秒杀订单表
 CREATE TABLE IF NOT EXISTS seckill_orders (
     order_no BIGINT NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
@@ -41,4 +45,16 @@ CREATE TABLE IF NOT EXISTS seckill_orders (
     KEY idx_seckill_product_id (product_id),
     CONSTRAINT fk_seckill_order_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_seckill_order_product FOREIGN KEY (product_id) REFERENCES products(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 库存事务日志表
+CREATE TABLE IF NOT EXISTS inventory_tx_log (
+    order_no BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    reason VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (order_no),
+    KEY idx_inventory_tx_product_id (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

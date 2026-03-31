@@ -414,12 +414,14 @@ h1, h2, h3, h4 {
 .features-products .container .product .content .product-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 14px;
-  min-height: 48px;
+  min-height: 44px;
 }
-.features-products .container .product .content .product-order-btn {
+.features-products .container .product .content .product-order-btn,
+.features-products .container .product .content .product-pay-btn {
   border: none;
   border-radius: 999px;
   background: linear-gradient(135deg, #009688 0%, #0f766e 100%);
@@ -430,28 +432,13 @@ h1, h2, h3, h4 {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 10px 20px rgba(0, 150, 136, 0.22);
+  min-width: 108px;
+  text-align: center;
 }
-.features-products .container .product .content .product-order-btn:hover {
+.features-products .container .product .content .product-order-btn:hover,
+.features-products .container .product .content .product-pay-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 24px rgba(0, 150, 136, 0.28);
-}
-.features-products .container .product .content .product-cart {
-  width: 45px;
-  height: 45px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background-color: rgba(0, 150, 136, 0.3);
-  color: var(--mainColor);
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--mainTransition);
-}
-.features-products .container .product .content .product-cart:hover {
-  background-color: var(--mainColor);
-  color: white;
 }
 .features-products .container .products-message {
   grid-column: 1 / -1;

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.inventory.mapper.ProductMapper">
+
+    <resultMap id="ProductResultMap" type="com.example.inventory.model.Product">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="stock" column="stock"/>
+        <result property="description" column="description"/>
+    </resultMap>
+
+    <select id="findById" resultMap="ProductResultMap">
+        SELECT id, name, stock, description
+        FROM products
+        WHERE id = #{id}
+    </select>
+
+    <update id="deductStock">
+        UPDATE products
+        SET stock = stock - 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND stock > 0
+    </update>
+
+    <update id="increaseStock">
+        UPDATE products
+        SET stock = stock + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

@@ -14,6 +14,7 @@
 			<div id="overlay"></div>
 			<div id="main">
 					<header id="header">
+						<!-- 首页入口区域 -->
 						<nav>
 							<ul>
 								<div id="platform-title">商品库存与秒杀系统</div>
@@ -27,8 +28,11 @@
 			</div>
 		</div>
 		<script>
+			// 页面加载完成后移除预加载样式
 			window.onload = function() { document.body.classList.remove('is-preload'); }
+			// 当前页面为单屏展示，禁用触摸滚动
 			window.ontouchmove = function() { return false; }
+			// 横竖屏切换后将页面位置重置到顶部
 			window.onorientationchange = function() { document.body.scrollTop = 0; }
 		</script>
 	</body>
