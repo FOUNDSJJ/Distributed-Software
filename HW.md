@@ -11,6 +11,10 @@
 - [第三次作业](#第三次作业)
   - [一、分布式缓存](#一分布式缓存-1)
   - [二、读写分离](#二读写分离)
+- [第四次作业](#第四次作业)
+  - [消息队列](#消息队列)
+- [第五次作业](#第五次作业)
+  - [事务与一致性](#事务与一致性)
 
 ---
 
@@ -18,17 +22,17 @@
 
 ## 一、系统设计文档
 
-本节围绕系统的整体方案展开说明，重点展示分布式服务拆分思路、核心API设计、数据库模型以及技术栈选型，便于从“架构设计”和“实现基础”两个层面快速把握项目全貌。
+本节概述系统整体方案，主要包括服务拆分、API 设计、数据库模型和技术栈选型。
 
 ### 1. 绘制系统架构草图（[系统架构草图源码](graph/系统架构图.md)）
 
-系统架构草图用于说明前端、网关、服务集群、配置中心、注册中心与数据库之间的协作关系，是后续服务拆分与接口设计的总体依据。
+系统架构草图展示了前端、网关、服务集群、配置中心、注册中心与数据库之间的协作关系，是后续服务拆分与接口设计的基础。
 
 ![系统架构草图](graph/系统架构图.png)
 
 ### 2. 定义各服务API接口
 
-当前项目前后端已经实际使用的接口主要集中在用户认证服务与商品服务，接口统一通过 `Nginx` 暴露为 `/api/**` 路径，再转发到后端Spring Boot实例。结合现有前端页面调用、控制器实现和后续四服务拆分方案，可以将API分为“已实现接口”和“设计接口”两类。
+当前已落地的接口主要集中在用户认证服务和商品服务，统一由 `Nginx` 以 `/api/**` 暴露并转发到后端 Spring Boot 实例。结合现有前端调用、控制器实现和后续四服务拆分方案，可将 API 分为“已实现接口”和“设计接口”两类。
 
 #### 1） 用户服务（User Service）
 
@@ -46,7 +50,7 @@
 - 前端 `Front_End/LogUp.js` 调用 `/api/auth/register` 完成注册。
 - 前端 `Front_End/LogIn.js` 调用 `/api/auth/login` 完成登录，并依赖后端返回的会话Cookie。
 - 后端 `AuthController` 已实现 `register`、`login`、`me`、`logout` 四个接口。
-- `SessionService` 使用Redis保存会话，说明当前登录态校验已经具备分布式部署所需的共享会话能力。
+- `SessionService` 使用 Redis 保存会话，说明当前登录态已具备分布式部署所需的共享能力。
 
 #### 2） 商品服务（Product Service）
 
@@ -63,11 +67,11 @@
 - 前端 `Front_End/Products/shop.js` 调用 `/api/products/info` 拉取商品列表并渲染商城页面。
 - 前端 `Front_End/Products/query.js` 调用 `/api/products/by-name?name=...` 实现商品搜索。
 - 后端 `ProductController` 已实现全部商品查询、按ID查询、按名称查询三个接口。
-- 当前商品数据直接包含 `stock` 字段，因此前端展示时直接读取了商品库存。
+- 当前商品数据直接包含 `stock` 字段，因此前端可直接展示库存。
 
 #### 3） 订单服务（Order Service）
 
-订单服务当前在仓库中尚未落地控制器和前端调用，但从已经设计的 `orders` 表以及整体ER图可以进一步定义以下接口：
+订单服务当前尚未落地控制器和前端调用，但可根据已设计的 `orders` 表和整体 ER 图定义以下接口：
 
 | 接口 | 方法 | 说明 | 关键参数 |
 | --- | --- | --- | --- |
@@ -84,11 +88,11 @@
 - 收货信息：`receiver_name`、`receiver_phone`、`receiver_address`
 - 订单明细：`items` 数组，包含 `product_id`、`quantity`、`unit_price`、`subtotal`
 
-在分布式架构下，订单服务是核心协调者，创建订单时应先调用用户服务校验用户，再调用商品服务获取商品价格快照，最后调用库存服务执行扣减库存。
+在分布式架构中，订单服务是核心协调者。创建订单时应先校验用户，再获取商品价格快照，最后调用库存服务扣减库存。
 
 #### 4） 库存服务（Inventory Service）
 
-库存服务当前也尚未落地控制器实现，但根据已经设计的 `inventory` 表，可以定义以下接口：
+库存服务当前也尚未落地控制器，但可根据已设计的 `inventory` 表定义以下接口：
 
 | 接口 | 方法 | 说明 | 关键参数 |
 | --- | --- | --- | --- |
@@ -110,7 +114,7 @@
 
 #### 5） 网关层API路由约定
 
-结合 `nginx/conf.d/default.conf` 当前配置，外部统一访问入口仍然为 `location /api/`，后续服务拆分后可继续保持统一前缀，再由网关按路径转发：
+结合 `nginx/conf.d/default.conf` 的当前配置，系统对外统一入口仍为 `location /api/`。后续服务拆分后可继续保留这一前缀，再由网关按路径转发：
 
 | 路径前缀 | 对应服务 |
 | --- | --- |
@@ -119,14 +123,14 @@
 | `/api/orders/**` | 订单服务 |
 | `/api/inventory/**` | 库存服务 |
 
-这样的设计有两个好处：
+这样设计有两个好处：
 
-- 前端调用方式保持稳定，后续即使把单体后端拆成多个独立微服务，也不需要大规模修改页面代码。
-- 各服务职责边界清晰，既便于课程报告展示“服务拆分”，也便于后续扩展数据库与远程调用逻辑。
+- 前端调用方式保持稳定，后续即使将单体后端拆成多个微服务，也无需大规模修改页面代码。
+- 各服务职责边界清晰，既便于课程报告展示服务拆分，也便于后续扩展数据库和远程调用逻辑。
 
 ### 3. 数据库ER图
 
-数据库设计围绕用户、商品、库存和订单四类核心业务对象展开，并通过整体ER图展示表之间的关联关系，便于后续进行服务拆分与接口联调。
+数据库设计围绕用户、商品、库存和订单四类核心业务对象展开，并通过整体 ER 图展示表之间的关联关系，便于后续服务拆分与接口联调。
 
 - 用户表（[用户表源码](graph/用户表.md)）
   
@@ -150,7 +154,7 @@
 
 ### 4. 技术栈选型说明
 
-当前仓库已经可以明确看出后端、数据库、缓存和前端的基础技术选型。后端使用 `Spring Boot 3 + MyBatis`，数据库使用 `MySQL`，缓存与会话使用 `Redis`，前端为原生 `HTML + CSS + JavaScript`，反向代理与静态资源承载使用 `Nginx`。
+从当前仓库可以明确看出项目的基础技术选型：后端使用 `Spring Boot 3 + MyBatis`，数据库使用 `MySQL`，缓存与会话使用 `Redis`，前端使用原生 `HTML + CSS + JavaScript`，反向代理与静态资源承载使用 `Nginx`。
 
 相关文件或目录：
 - `Back_End/Log/pom.xml`
@@ -161,12 +165,12 @@
 
 实现说明：
 - `pom.xml` 中已经引入 `spring-boot-starter-web`、`mybatis-spring-boot-starter`、`mysql-connector-j`、`spring-boot-starter-security`、`spring-boot-starter-data-redis`。
-- `application.properties` 中已经配置MySQL、Redis、MyBatis和服务端口。
+- `application.properties` 中已配置 MySQL、Redis、MyBatis 和服务端口。
 - 前端页面与脚本位于 `Front_End/`，说明项目采用前后端分离的基础结构。
 
 ## 二、环境准备
 
-本节说明项目从代码仓库初始化到本地开发环境搭建的准备过程，目的是为后续功能开发、容器化部署与分布式实验提供统一基础。
+本节说明项目从代码仓库初始化到本地开发环境搭建的过程，为后续功能开发、容器化部署和分布式实验提供统一基础。
 
 ### 1. 初始化项目代码仓库（Git）
 仓库已经完成Git初始化，项目根目录存在 `.git`、`.gitignore` 等版本管理文件。
@@ -177,7 +181,7 @@
 - `.gitattributes`
 
 ### 2. 搭建基础开发环境（Spring Boot + MyBatis + MySQL）
-仓库中已经搭建出可运行的Java后端工程，并完成了数据库脚本、Mapper、配置文件和打包产物的组织。
+仓库中已搭建可运行的 Java 后端工程，并完成数据库脚本、Mapper、配置文件和打包产物的组织。
 
 相关文件或目录：
 - `Back_End/Log/`
@@ -190,10 +194,10 @@
 实现说明：
 - `Back_End/Log/` 是Maven工程，具备标准的 `src/main/java`、`src/main/resources` 结构。
 - `application.properties` 完成了数据库连接、Redis连接、MyBatis映射位置、服务端口等配置。
-- `Database/` 下保存了用户表、商品表初始化SQL，说明本地开发环境依赖的数据库结构已经准备。
+- `Database/` 下保存了用户表和商品表初始化 SQL，说明本地开发环境所需的数据库结构已准备完成。
 
 ### 3. 搭建一个项目代码框架，实现简单的用户注册登录功能
-该功能已经完成，包含前端注册页/登录页、后端注册/登录接口、数据库持久化、密码加密和基于Redis的会话管理。
+该功能已完成，包含前端注册页与登录页、后端注册/登录接口、数据库持久化、密码加密和基于 Redis 的会话管理。
 
 相关文件或目录：
 - `Front_End/LogUp.html`
@@ -212,8 +216,8 @@
 - 前端通过 `LogUp.html + LogUp.js` 发起注册请求，通过 `LogIn.html + LogIn.js` 发起登录请求。
 - `AuthController` 提供 `/api/auth/register`、`/api/auth/login`、`/api/auth/me`、`/api/auth/logout` 接口。
 - `UserService` 负责用户名/手机号唯一性校验、密码加密、登录校验和最后登录时间更新。
-- `PasswordUtil` 使用BCrypt处理密码哈希，避免明文存储密码。
-- `SessionService` 将登录态写入Redis，并通过 `SESSIONID` Cookie维持会话。
+- `PasswordUtil` 使用 BCrypt 处理密码哈希，避免明文存储。
+- `SessionService` 将登录态写入 Redis，并通过 `SESSIONID` Cookie 维持会话。
 
 ---
 
@@ -221,10 +225,10 @@
 
 ## 一、容器环境
 
-本节聚焦项目的容器化部署方式，说明数据库、缓存、后端服务与网关如何通过统一编排文件完成启动和协同工作。
+本节说明项目的容器化部署方式，展示数据库、缓存、后端服务与网关如何通过统一编排文件启动并协同工作。
 
 ### 1. 配置项目的docker-compose文件，将数据库、后端服务、Nginx分别使用容器进行启动和加载
-仓库中已经提交 `docker-compose.yml`，其中包含 `mysql`、`redis`、`backend1`、`backend2`、`nginx` 五个服务；同时仓库中还提供了 `Docker-Deployment.md` 说明容器部署过程。
+仓库中已提交 `docker-compose.yml`，其中包含 `mysql`、`redis`、`backend1`、`backend2`、`nginx` 五个服务；同时还提供了 `Docker-Deployment.md` 说明容器部署过程。
 
 相关文件或目录：
 - `docker-compose.yml`
@@ -233,12 +237,12 @@
 
 实现说明：
 - `docker-compose.yml` 中配置了数据库容器、Redis容器、两个后端实例和Nginx容器。
-- Nginx挂载 `Front_End/` 作为静态资源目录，挂载 `nginx/conf.d/` 作为代理配置目录。
-- 结合仓库现状看，容器编排配置已经提交；但当前仓库文件列表中未看到独立 `Dockerfile` 文件，因此这部分更准确地说是“已完成容器编排配置与部署说明”。
+- Nginx 挂载 `Front_End/` 作为静态资源目录，挂载 `nginx/conf.d/` 作为代理配置目录。
+- 结合仓库现状，这部分已完成容器编排配置与部署说明。
 
 ## 二、负载均衡
 
-本节展示系统从单实例走向多实例部署后的访问分发方案，重点说明Nginx代理转发、负载均衡算法以及压力测试验证过程。
+本节展示系统从单实例走向多实例部署后的访问分发方案，重点说明 Nginx 代理转发、负载均衡算法和压力测试验证过程。
 
 ### 1. 后端服务启动多个实例，并分别开启不同REST端口（如 8081 和 8082）
 该部分已完成配置。
@@ -260,7 +264,7 @@
 
 实现说明：
 - Nginx监听 `80` 端口。
-- `/api/` 路径通过 `proxy_pass` 转发到后端upstream。
+- `/api/` 路径通过 `proxy_pass` 转发到后端 upstream。
 - 转发时保留了 `Host`、`X-Real-IP`、`X-Forwarded-For` 等头信息。
 
 ### 3. 尝试为Nginx配置不同的负载均衡算法
@@ -273,7 +277,7 @@
 - 已配置 `backend_round_robin`。
 - 已配置 `backend_least_conn`。
 - 已配置 `backend_ip_hash`。
-- 当前 `location /api/` 默认使用的是 `backend_round_robin`，其余算法可通过修改 `proxy_pass` 指向进行切换测试。
+- 当前 `location /api/` 默认使用 `backend_round_robin`，其余算法可通过修改 `proxy_pass` 指向切换测试。
 
 ### 4. 使用JMeter进行压力测试
 仓库中已经保留JMeter压测结果截图与说明材料。
@@ -300,10 +304,10 @@
 
 ## 三、动静分离
 
-本节说明前端静态资源与后端动态接口的访问路径拆分方式，通过Nginx完成静态资源直出与动态请求转发，提升部署清晰度与访问效率。
+本节说明前端静态资源与后端动态接口的访问路径拆分方式，通过 Nginx 完成静态资源直出和动态请求转发，提升部署清晰度与访问效率。
 
 ### 1. 编写一个简单的前端HTML文件，可以包括CSS、JS等
-该部分已完成，且不仅有单个页面，还包含首页、注册页、登录页和商品页。
+该部分已完成，且不仅包含单个页面，还包括首页、注册页、登录页和商品页。
 
 相关文件或目录：
 - `Front_End/index.html`
@@ -317,8 +321,8 @@
 - `Front_End/Products/query.js`
 
 实现说明：
-- `Front_End/` 下已经组织出完整静态页面资源。
-- 页面样式、图片、脚本资源拆分明确，便于直接由Nginx提供静态访问。
+- `Front_End/` 下已组织出完整的静态页面资源。
+- 页面样式、图片和脚本资源拆分明确，便于直接由 Nginx 提供静态访问。
 
 ### 2. 在Nginx中配置动静分离
 该部分已完成配置。
@@ -331,7 +335,7 @@
 - `/` 路径直接返回静态页面，根目录指向 `/usr/share/nginx/html`。
 - `/api/` 路径代理到后端服务。
 - `/static/` 路径配置了静态资源缓存时间 `expires 1h`。
-- 这说明仓库已经按“静态资源由Nginx提供，动态请求转发后端”的方式进行了动静分离。
+- 说明仓库已按“静态资源由 Nginx 提供，动态请求转发到后端”的方式完成动静分离。
 
 ### 3. 使用JMeter分别压测静态文件以及后端服务，观察响应时间
 仓库中已有对应截图和说明材料。
@@ -349,7 +353,7 @@
 
 ## 四、分布式缓存
 
-本节围绕商品查询场景引入Redis，说明缓存接入方式以及对缓存穿透、缓存击穿、缓存雪崩等典型问题的处理策略。
+本节围绕商品查询场景引入 Redis，说明缓存接入方式，以及对缓存穿透、击穿、雪崩等典型问题的处理策略。
 
 ### 1. 引入Redis缓存，实现商品详情页缓存
 该部分已完成。
@@ -368,7 +372,7 @@
 
 实现说明：
 - `ProductController` 提供 `/api/products/{id}` 和 `/api/products/by-name` 等接口。
-- `ProductService#getProductById` 优先从Redis读取商品详情，缓存未命中时回源MySQL，再将结果写回Redis。
+- `ProductService#getProductById` 优先从 Redis 读取商品详情，缓存未命中时回源 MySQL，再将结果写回 Redis。
 - 前端商品页面和查询脚本可以访问商品查询接口，形成“商品详情页缓存”的业务链路。
 
 ### 2. 处理缓存穿透、击穿、雪崩问题
@@ -389,10 +393,10 @@
 
 ## 一、分布式缓存
 
-本节对应第三次作业内容，继续基于现有实现总结Redis缓存方案，并从报告角度对关键实现进行归纳与复盘。
+本节对应第三次作业，继续基于现有实现总结 Redis 缓存方案，并从报告角度归纳关键实现。
 
 ### 1. 引入Redis，实现商品详情页缓存
-该部分与第二次作业中的商品缓存实现一致，已经落在当前代码仓库中。
+该部分与第二次作业中的商品缓存实现一致，已落在当前代码仓库中。
 
 相关文件或目录：
 - `Back_End/Log/src/main/java/com/example/auth/controller/ProductController.java`
@@ -410,15 +414,15 @@
 
 实现说明：
 - 穿透、击穿、雪崩三类问题的处理逻辑均集中在 `ProductService#getProductById` 中。
-- `README.md` 也对对应策略进行了总结，便于老师和助教快速核对。
+- `README.md` 也对相应策略做了总结，便于老师和助教快速核对。
 
 ## 二、读写分离
 
-本节结合商品搜索页面展示搜索功能的实现效果，重点说明查询入口、结果反馈以及异常提示等交互设计。
+本节结合商品搜索页面展示读写分离的实现与测试效果。
 
 ### 1. 搭建MySQL的读写分离环境，在代码中测试读写分离效果
 
-该部分基于当前 `Spring Boot + MyBatis + MySQL` 后端项目实现了 MySQL 主从复制与应用层读写分离。整体方案为：将 `mysql-master` 作为写库，将 `mysql-slave` 作为读库，后端通过动态数据源根据事务的只读属性自动路由到不同数据源，从而实现“写请求进主库、读请求进从库”的效果。
+该部分基于当前 `Spring Boot + MyBatis + MySQL` 后端项目实现了 MySQL 主从复制与应用层读写分离。整体方案是：`mysql-master` 作为写库，`mysql-slave` 作为读库；后端通过动态数据源根据事务的只读属性自动路由，从而实现“写入走主库、查询走从库”。
 
 **1. 读写分离功能实现**
 
@@ -439,27 +443,25 @@
 - `Database/MySQL_RW/slave/start-replication.sql`
 
 实现说明：
-- `application.properties` 中新增了 `spring.datasource.write.*` 和 `spring.datasource.read.*` 两套配置，分别对应主库和从库。后端启动时会同时初始化这两个数据源。
-- `DataSourceConfig.java` 负责注册 `writeDataSource`、`readDataSource` 以及默认的路由数据源 `dataSource`，并额外注册 `writeJdbcTemplate` 和 `readJdbcTemplate`，方便在测试接口中直接观察主从节点的读写情况。
-- `RoutingDataSource.java` 继承 `AbstractRoutingDataSource`，并通过 `TransactionSynchronizationManager.isCurrentTransactionReadOnly()` 判断当前事务是否为只读事务。如果是只读事务则路由到 `read`，否则路由到 `write`。
-- `ProductService.java` 中的查询方法 `getProductById`、`getProductByName`、`getAllProducts` 都标注为 `@Transactional(readOnly = true)`，因此这些商品查询会优先路由到从库。
-- `UserService.java` 中的 `findById`、`findByPhoneNumber`、`findByUserName` 被标注为只读事务，而 `registerUser` 和 `validateLogin` 使用普通 `@Transactional`，因此注册、登录中的插入和更新操作会路由到主库。
-- `ProductReplicationService.java` 是专门为读写分离实验新增的服务类。它直接通过 `writeJdbcTemplate` 对主库执行 `UPDATE products SET stock = ?`，再分别使用 `writeJdbcTemplate` 和 `readJdbcTemplate` 去查询主库和从库中的商品数据与节点信息，从而直观地对比两者的差异。
-- `ProductController.java` 中新增了 `/api/products/replication-status/{id}` 和 `/api/products/replication-test/{id}` 两个接口。前者用于查看当前主从节点的商品状态，后者用于执行一次写入并立即比较主从查询结果。
-- `Database/MySQL_RW/master/my.cnf` 用于配置主库的 `server-id`、`log-bin`、`gtid_mode` 等参数，使主库具备可被复制的能力。
-- `Database/MySQL_RW/master/replication-user.sql` 用于在主库中创建复制账号 `repl`，供从库连接主库拉取 binlog。
-- `Database/MySQL_RW/slave/my.cnf` 用于配置从库的 `server-id`、`relay-log`、`gtid_mode` 等参数，使从库具备接受复制的能力。
-- `Database/MySQL_RW/slave/start-replication.sql` 中通过 `CHANGE REPLICATION SOURCE TO ...` 和 `START REPLICA` 建立主从复制关系，并在复制启动后打开 `read_only` 和 `super_read_only`，使从库只承担读请求。
-- `docker-compose.yml` 将 `mysql-master`、`mysql-slave`、`mysql-replica-init`、`backend1`、`backend2`、`redis` 和 `nginx` 组合在同一套部署环境中。其中 `backend1` 和 `backend2` 都通过环境变量指定写库为 `mysql-master`，读库为 `mysql-slave`，因此在 Docker 环境中可以直接运行读写分离。
-- `Back_End/Log/Dockerfile` 用于将后端打包为容器镜像，便于在 WSL2 + Docker 环境中统一部署并测试多个后端实例。
+- `application.properties` 中新增了 `spring.datasource.write.*` 和 `spring.datasource.read.*` 两套配置，分别对应主库和从库。
+- `DataSourceConfig.java` 负责注册 `writeDataSource`、`readDataSource` 和路由数据源 `dataSource`，并额外提供 `writeJdbcTemplate`、`readJdbcTemplate` 便于测试。
+- `RoutingDataSource.java` 继承 `AbstractRoutingDataSource`，通过 `TransactionSynchronizationManager.isCurrentTransactionReadOnly()` 判断当前事务是否为只读事务；只读事务路由到 `read`，否则路由到 `write`。
+- `ProductService.java` 中的 `getProductById`、`getProductByName`、`getAllProducts` 标注为 `@Transactional(readOnly = true)`，因此商品查询优先走从库。
+- `UserService.java` 中的 `findById`、`findByPhoneNumber`、`findByUserName` 标注为只读事务，而 `registerUser` 和 `validateLogin` 使用普通 `@Transactional`，因此注册和登录中的写操作会路由到主库。
+- `ProductReplicationService.java` 用于读写分离实验：先通过 `writeJdbcTemplate` 更新主库数据，再分别查询主库和从库，直观对比差异。
+- `ProductController.java` 新增 `/api/products/replication-status/{id}` 和 `/api/products/replication-test/{id}` 两个接口，分别用于查看主从状态和执行写入测试。
+- `Database/MySQL_RW/master/my.cnf`、`replication-user.sql` 用于配置主库复制能力并创建复制账号 `repl`。
+- `Database/MySQL_RW/slave/my.cnf`、`start-replication.sql` 用于配置从库并建立主从复制关系，同时开启 `read_only` 和 `super_read_only`。
+- `docker-compose.yml` 将 `mysql-master`、`mysql-slave`、`mysql-replica-init`、`backend1`、`backend2`、`redis` 和 `nginx` 组合在同一套部署环境中，后端实例通过环境变量指定读写库。
+- `Back_End/Log/Dockerfile` 用于将后端打包为容器镜像，便于在 WSL2 + Docker 环境中统一部署和测试。
 
 **2. 读写分离功能测试**
 
-为了验证系统已经实现“写主库、读从库”以及“主从复制延迟后最终一致”的效果，本项目在 WSL2 + Docker 环境中通过 `curl` 对后端接口进行了三次连续测试。整个过程中，所有写操作都发生在主库，从库则依靠 MySQL 主从复制进行异步同步。
+为验证系统已实现“写主库、读从库”以及“主从复制延迟后最终一致”，本项目在 WSL2 + Docker 环境中通过 `curl` 对后端接口进行了三次连续测试。测试过程中，所有写操作都落在主库，从库通过 MySQL 主从复制异步同步。
 
 测试步骤与结果如下：
 
-1. 首先查询当前主从数据库中商品 `id = 1` 的初始状态：
+1. 首先查询商品 `id = 1` 在主从库中的初始状态：
 
 ```bash
 curl http://localhost/api/products/replication-status/1
@@ -469,9 +471,9 @@ curl http://localhost/api/products/replication-status/1
 
 ![读写分离测试（查询商品初始状态）](graph/读写分离测试（查询商品初始状态）.png)
 
- 此时返回结果中可以同时看到 `writeNode`、`writeData`、`readNode` 和 `readData`，表明当前接口已经能够分别读取主库和从库中的商品信息。在初始状态下，两者的 `stock` 数值一致。
+返回结果中可以同时看到 `writeNode`、`writeData`、`readNode` 和 `readData`，说明接口已能分别读取主库和从库中的商品信息。初始状态下，两者的 `stock` 一致。
 
-2. 接着对同一个商品执行写入操作，将 `stock` 修改为 `77`，并在写入完成后立马同时读取主从数据库信息：
+2. 接着对同一个商品执行写入操作，将 `stock` 修改为 `77`，并在写入后立即同时读取主从库信息：
 
 ```bash
 curl -X POST http://localhost/api/products/replication-test/1 \
@@ -483,9 +485,9 @@ curl -X POST http://localhost/api/products/replication-test/1 \
 
  ![读写分离测试（写入后立马读取）](graph/读写分离测试（写入后立马读取）.png)
 
-  可以观察到，主库中的 `writeData.stock` 已经变为 `77`，说明写操作已成功写入主库；但此时从库中的 `readData.stock` 还未立刻变为 `77`，说明从库读取的仍然是复制前的数据，也就直观地体现了读写分离场景下的主从复制延迟。
+可以看到，主库中的 `writeData.stock` 已变为 `77`，说明写操作已成功写入主库；但此时从库中的 `readData.stock` 尚未同步到 `77`，说明从库读取的仍是复制前的数据，直观体现了主从复制延迟。
 
-3. 最后间隔一段时间后，再次查询该商品的主从状态：
+3. 间隔一段时间后，再次查询该商品的主从状态：
 
 ```bash
 curl http://localhost/api/products/replication-status/1
@@ -495,38 +497,38 @@ curl http://localhost/api/products/replication-status/1
 
  ![读写分离测试（写入后间隔一段时间读取）](graph/读写分离测试（写入后间隔一段时间读取）.png)
 
- 可以看到，经过一小段时间后，从库中的 `readData.stock` 也变为了 `77`，表明主库的写入已经通过 MySQL 主从复制成功同步到了从库。
+可以看到，经过短暂延迟后，从库中的 `readData.stock` 也变为 `77`，说明主库写入已通过 MySQL 主从复制成功同步到从库。
 
- 综合上述三次测试可以得出结论：本项目已经在 Docker 部署环境中成功搭建 MySQL 主从复制与应用层读写分离机制，能够在代码中观察到“写入先到主库、查询优先读从库、随后主从逐步达到一致”的实际效果。
+综合三次测试可以得出结论：本项目已在 Docker 部署环境中成功搭建 MySQL 主从复制与应用层读写分离机制，能够清楚观察到“写入先到主库、查询优先走从库、随后主从逐步一致”的效果。
 
 
-### 2. 基于ElasticSearch实现商品搜索功能
+### 2. 基于 Elasticsearch 实现商品搜索功能
 
- 为便于展示搜索模块的交互效果，本节从商品详情展示、查询成功反馈和查询失败反馈三个场景进行说明，整体页面设计保持信息集中、状态明确、交互闭环的原则。
+为便于展示搜索模块的交互效果，本节从商品详情、查询成功和查询失败三个场景进行说明。
 
 **商品详情界面**
 
  ![商品详情界面](graph/shop.png)
 
- - 商品名称、价格、库存和描述等核心信息集中展示，便于用户快速浏览商品内容。
- - 页面保留明确的查询入口，方便用户围绕商品名称继续执行搜索操作。
- - 商品信息与库存字段同时呈现，能够更直观地体现业务数据之间的关联关系。
+- 商品名称、价格、库存和描述等核心信息集中展示，便于快速浏览。
+- 页面保留明确的查询入口，方便继续按商品名称搜索。
+- 商品信息与库存字段同时呈现，便于直观观察业务数据之间的关联。
 
 **查询成功界面**
 
 ![查询成功界面](graph/search_success.png)
 
-- 当查询命中目标商品后，页面能够立即返回对应商品信息，结果呈现较为直接。
-- 查询状态与商品详情同步展示，减少用户额外判断当前操作是否成功的成本。
-- 从输入关键词到返回结果形成完整查询闭环，便于展示搜索功能的可用性。
+- 查询命中目标商品后，页面会立即返回对应商品信息。
+- 查询状态与商品详情同步展示，便于用户快速判断结果是否正确。
+- 从输入关键词到返回结果形成完整闭环，能够体现搜索功能的可用性。
 
 **查询失败界面**
 
  ![查询失败界面](graph/search_failed.png)
 
- - 当商品不存在或未命中搜索条件时，页面能够及时给出失败提示。
- - 提示信息语义清晰，便于用户继续修改关键字并重新发起查询。
- - 正常场景与异常场景均有对应页面反馈，体现了系统在交互层面的完整性与容错性。
+- 当商品不存在或未命中搜索条件时，页面会及时给出失败提示。
+- 提示信息语义清晰，便于用户调整关键字后重新查询。
+- 正常场景与异常场景均有对应反馈，体现了系统交互的完整性与容错性。
 
 ---
 
@@ -538,23 +540,23 @@ curl http://localhost/api/products/replication-status/1
 
 **实现逻辑**
 
- 本次在现有登录、商品查询、Redis 会话和 MySQL 主从读写分离的基础上，新增了独立的秒杀下单后端 `Back_End/Order`，并将秒杀链路拆分为“同步快速校验 + 异步订单创建”两个阶段。用户在前端商品页点击“立即下单”按钮后，浏览器会携带登录后的 `SESSIONID` Cookie 向 `/api/seckill/orders` 发送请求，请求体中只包含商品名称 `product_name`。后端首先通过 Redis 中保存的会话信息识别当前登录用户，再根据商品名称查询对应商品。
+本次在现有登录、商品查询、Redis 会话和 MySQL 主从读写分离的基础上，新增了独立的秒杀下单后端 `Back_End/Order`，并将秒杀链路拆分为“同步快速校验 + 异步订单创建”两个阶段。用户在前端商品页点击“立即下单”后，浏览器会携带登录后的 `SESSIONID` Cookie 向 `/api/seckill/orders` 发送请求，请求体仅包含商品名称 `product_name`。后端先根据 Redis 中的会话信息识别当前用户，再按商品名称查询对应商品。
 
- 为了应对秒杀高并发场景，真正的库存校验与去重不是直接落到数据库，而是先在 Redis 中完成。系统为每个商品维护秒杀库存键，为每个商品维护一个“已下单用户集合”，并使用 Lua 脚本在 Redis 中原子执行以下操作：检查库存是否存在、判断当前用户是否已经抢购过该商品、库存是否大于 0、成功时扣减库存并记录该用户已参与秒杀，同时写入一个订单处理中状态 `QUEUED`。由于 Lua 脚本在 Redis 中是原子执行的，因此能够避免并发条件下库存超卖和重复下单的问题。
+为应对秒杀高并发场景，库存校验与去重并不直接落库，而是先在 Redis 中完成。系统为每个商品维护秒杀库存键和“已下单用户集合”，并通过 Lua 脚本原子执行以下操作：检查库存是否存在、判断用户是否已抢购、判断库存是否大于 0；若检查通过，则扣减库存、记录用户参与状态，并写入订单处理中状态 `QUEUED`。由于 Lua 脚本在 Redis 中原子执行，因此可以避免并发条件下的超卖和重复下单。
 
- 在 Redis 侧预扣库存成功后，系统会使用雪花算法生成全局唯一订单号，并将订单消息写入 Kafka 的 `seckill-order-topic`。这样用户请求就不需要同步等待数据库写入，而是由消息队列承担削峰填谷作用，将高并发的下单请求转化为后端可持续消费的异步消息流。Kafka 消费者在后台监听该主题，读取消息后进入数据库事务：先检查订单号是否已经存在，再检查同一用户和同一商品的组合是否已有订单记录，然后执行数据库库存扣减与订单表插入。数据库中的 `seckill_orders` 表通过 `(user_id, product_id)` 唯一约束再次兜底，保证同一用户同一商品只能成功创建一条订单。
+Redis 侧预扣库存成功后，系统会使用雪花算法生成全局唯一订单号，并将订单消息写入 Kafka 的 `seckill-order-topic`。这样用户请求无需同步等待数据库写入，而是由消息队列承担削峰填谷作用，将高并发请求转化为后端可持续消费的异步消息流。Kafka 消费者在后台监听该主题，读取消息后进入数据库事务：先检查订单号是否已存在，再检查同一用户与同一商品是否已有订单记录，最后执行数据库库存扣减和订单插入。数据库中的 `seckill_orders` 表通过 `(user_id, product_id)` 唯一约束再次兜底，保证同一用户同一商品只能成功创建一条订单。
 
- 如果 Kafka 发送失败、数据库扣库存失败、商品不存在或消费者处理异常，系统会执行补偿逻辑：将 Redis 中已预扣的库存加回去，移除该用户在商品维度上的秒杀标记，并将订单状态改写为失败状态。这样即使异步阶段出现异常，也能保证最终库存不会长期错误减少，订单数据也不会出现半完成状态。整体上，这套方案实现了“Redis 快速挡流量、Kafka 异步削峰、MySQL 最终一致落库”的秒杀下单流程。
+如果 Kafka 发送失败、数据库扣库存失败、商品不存在或消费者处理异常，系统会执行补偿逻辑：恢复 Redis 中已预扣的库存，移除该用户在商品维度上的秒杀标记，并将订单状态改为失败。这样即使异步阶段出现异常，也能避免库存长期错误减少，防止订单处于半完成状态。整体上，这套方案实现了“Redis 快速挡流量、Kafka 异步削峰、MySQL 最终一致落库”的秒杀下单流程。
 
 **代码概括介绍**
 
- 秒杀下单后端的核心代码集中在 `Back_End/Order` 模块中。`SeckillOrderController.java` 提供 `/api/seckill/orders` 的下单接口以及订单查询接口，其中下单接口从请求体读取 `product_name`，并从 Cookie 中提取 `SESSIONID` 来识别用户身份。`SessionService.java` 负责根据 Redis 中的会话键值还原当前用户 ID。`ProductMapper.java` 与 `ProductMapper.xml` 新增了按商品名称查询商品的能力，从而将前端传入的商品名称映射为实际商品记录。
+秒杀下单后端的核心代码集中在 `Back_End/Order` 模块中。`SeckillOrderController.java` 提供 `/api/seckill/orders` 下单接口和订单查询接口；下单接口从请求体读取 `product_name`，并从 Cookie 中提取 `SESSIONID` 识别用户身份。`SessionService.java` 负责根据 Redis 中的会话键值还原当前用户 ID。`ProductMapper.java` 与 `ProductMapper.xml` 新增了按商品名称查询商品的能力，用于将前端传入的商品名称映射为实际商品记录。
 
- 真正的秒杀核心逻辑位于 `OrderService.java`。该类内部定义了 Redis Lua 脚本，用于一次性完成库存检查、重复下单检查、库存扣减、下单状态写入等操作；同时封装了订单状态键、库存键、用户去重键的命名规则。下单入口 `submitSeckillOrder` 会先根据商品名称查询商品，再生成订单号，执行 Redis 预扣减逻辑，预扣减成功后构造 `SeckillOrderMessage` 并投递到 Kafka。若 Kafka 投递失败，则调用补偿方法回滚 Redis 中的预扣减状态。订单消费者 `SeckillOrderConsumer.java` 通过 `@KafkaListener` 监听秒杀主题，读取消息后调用 `createOrder` 进入数据库事务，完成库存最终扣减和订单持久化。
+秒杀核心逻辑位于 `OrderService.java`。该类内部定义了 Redis Lua 脚本，用于一次性完成库存检查、重复下单检查、库存扣减和下单状态写入；同时封装了订单状态键、库存键和用户去重键的命名规则。下单入口 `submitSeckillOrder` 会先根据商品名称查询商品，再生成订单号并执行 Redis 预扣减逻辑；预扣减成功后构造 `SeckillOrderMessage` 并投递到 Kafka。若 Kafka 投递失败，则调用补偿方法回滚 Redis 中的预扣减状态。订单消费者 `SeckillOrderConsumer.java` 通过 `@KafkaListener` 监听秒杀主题，读取消息后调用 `createOrder` 进入数据库事务，完成库存最终扣减和订单持久化。
 
- 为了提升部署稳定性，`SeckillOrderProducer.java` 中的消息发送被改为同步确认发送结果，只有 Kafka 真正接收成功后才认为请求进入异步处理队列；`KafkaTopicConfig.java` 会在服务启动时自动创建 `seckill-order-topic`，减少因主题不存在导致的消费异常。订单 ID 由 `OrderIdGenerator.java` 负责生成，其实现采用雪花算法思路，保证在单节点部署下也能生成趋势递增且全局唯一的长整型订单号。
+为提升部署稳定性，`SeckillOrderProducer.java` 将消息发送改为同步确认，只有 Kafka 真正接收成功后才认为请求进入异步处理队列；`KafkaTopicConfig.java` 会在服务启动时自动创建 `seckill-order-topic`，减少因主题不存在导致的消费异常。订单 ID 由 `OrderIdGenerator.java` 负责生成，采用雪花算法思路，保证在单节点部署下也能生成趋势递增且全局唯一的长整型订单号。
 
- 数据库层面，`Database/MySQL_RW/master/init.sql` 中新增了 `seckill_orders` 表，字段包含订单号、用户 ID、商品 ID、订单金额、订单状态和时间戳信息，并为 `(user_id, product_id)` 建立唯一索引，用于保证幂等性。部署层面，`docker-compose.yml` 新增了 `kafka` 服务和 `backend-order` 服务，Nginx 配置 `nginx/conf.d/default.conf` 也新增了 `/api/seckill/orders` 到 `backend-order` 的转发规则。前端方面，在 `Front_End/Products/shop.js` 中为动态渲染的商品卡片增加“立即下单”按钮，`Front_End/Products/order.js` 负责携带 Cookie 发起秒杀请求并在页面上展示下单结果，实现了完整的前后端联动。
+数据库层面，`Database/MySQL_RW/master/init.sql` 中新增了 `seckill_orders` 表，字段包含订单号、用户 ID、商品 ID、订单金额、订单状态和时间戳信息，并为 `(user_id, product_id)` 建立唯一索引，用于保证幂等性。部署层面，`docker-compose.yml` 新增了 `kafka` 服务和 `backend-order` 服务，`nginx/conf.d/default.conf` 也新增了 `/api/seckill/orders` 到 `backend-order` 的转发规则。前端方面，`Front_End/Products/shop.js` 为动态渲染的商品卡片增加了“立即下单”按钮，`Front_End/Products/order.js` 负责携带 Cookie 发起秒杀请求并展示结果，实现了完整的前后端联动。
 
 **界面展示**
 
@@ -568,11 +570,11 @@ curl http://localhost/api/products/replication-status/1
 ## 事务与一致性
 ### 1、在秒杀下单时，基于Redis实现库存预扣减，防超卖、限购
 
- 当前秒杀下单先经过 `Back_End/Order/src/main/java/com/example/order/service/OrderService.java` 中的 Redis Lua 脚本处理，再进入后续异步链路。脚本会同时检查商品库存键、商品维度的已下单用户集合，以及用户对应的待处理订单键：若库存不存在则直接失败，若用户已参与过该商品秒杀则拒绝重复下单，若库存不足则返回售空；只有全部条件满足时，才会原子执行库存减一、将用户写入限购集合、写入待处理订单标记并设置 Redis 订单状态为 `QUEUED`。这样把“查库存、扣库存、限购去重”合并为一个原子操作，在高并发下有效防止超卖和重复抢购。相关文件主要包括 `OrderService.java`、`SeckillOrderController.java`、`StockWarmupService.java`、`Front_End/Products/order.js` 和 `Database/MySQL_RW/master/init.sql`。
+当前秒杀下单会先经过 `Back_End/Order/src/main/java/com/example/order/service/OrderService.java` 中的 Redis Lua 脚本，再进入后续异步链路。脚本会同时检查商品库存键、商品维度的已下单用户集合，以及用户对应的待处理订单键：若库存不存在则直接失败，若用户已参与过该商品秒杀则拒绝重复下单，若库存不足则返回售空；只有全部条件满足时，才会原子执行库存减一、将用户写入限购集合、写入待处理订单标记，并把 Redis 订单状态设为 `QUEUED`。这样将“查库存、扣库存、限购去重”合并为一个原子操作，在高并发下可以有效防止超卖和重复抢购。相关文件主要包括 `OrderService.java`、`SeckillOrderController.java`、`StockWarmupService.java`、`Front_End/Products/order.js` 和 `Database/MySQL_RW/master/init.sql`。
 
 ### 2、采用基于消息的一致性或TCC事务保障数据一致性
 
-- 下单+库存扣减一致性
- 本项目采用基于消息的一致性方案处理“下单 + 库存扣减”。用户请求先在 Redis 中完成预扣减并生成待处理订单，然后订单服务发送扣库存消息到 Kafka；库存服务消费消息后真正扣减数据库库存，并回传扣减结果消息。订单服务再根据结果把订单从 `PENDING_STOCK` 更新为 `CREATED`，或在失败时关闭订单并回滚 Redis 预占库存、去重集合和待处理标记，从而保证订单与库存状态最终一致。
-- 订单支付+ 订单状态更新一致性
- 订单支付链路同样使用消息一致性保证状态正确流转。订单服务在发起支付前先将订单状态从 `CREATED` 或 `PAY_FAILED` 原子更新为 `PAYING`，随后发送支付请求消息；支付结果返回后，由 `PaymentResultConsumer.java` 消费回执并调用 `OrderService.handlePaymentResult`，将订单状态更新为 `PAID` 或 `PAY_FAILED`，同时刷新 Redis 中的订单状态。这样可以避免“支付成功但订单状态未更新”以及重复支付造成的状态混乱。
+- 下单 + 库存扣减一致性  
+  本项目采用基于消息的一致性方案处理“下单 + 库存扣减”。用户请求先在 Redis 中完成预扣减并生成待处理订单，然后订单服务发送扣库存消息到 Kafka；库存服务消费消息后真正扣减数据库库存，并回传扣减结果消息。订单服务再根据结果将订单从 `PENDING_STOCK` 更新为 `CREATED`，或在失败时关闭订单并回滚 Redis 中的预占库存、去重集合和待处理标记，从而保证订单与库存状态最终一致。
+- 订单支付 + 订单状态更新一致性  
+  订单支付链路同样使用消息一致性保证状态正确流转。订单服务在发起支付前先将订单状态从 `CREATED` 或 `PAY_FAILED` 原子更新为 `PAYING`，随后发送支付请求消息；支付结果返回后，由 `PaymentResultConsumer.java` 消费回执并调用 `OrderService.handlePaymentResult`，将订单状态更新为 `PAID` 或 `PAY_FAILED`，同时刷新 Redis 中的订单状态。这样可以避免“支付成功但订单状态未更新”以及重复支付造成的状态混乱。
