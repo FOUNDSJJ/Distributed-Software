@@ -95,6 +95,34 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
 
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: nacos
+    restart: always
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+      PREFER_HOST_MODE: hostname
+    ports:
+      - "8848:8848"
+
+  nacos-config-import:
+    image: curlimages/curl:8.7.1
+    container_name: nacos-config-import
+    restart: on-failure
+    depends_on:
+      - nacos
+    environment:
+      NACOS_ADDR: nacos:8848
+    volumes:
+      - ./Back_End/Nacos/configs:/configs
+    entrypoint:
+      - /bin/sh
+      - /configs/import.sh
+
   backend1:
     build:
       context: ./Back_End/Log
@@ -113,6 +141,7 @@ services:
       MYSQL_READ_PASSWORD: Password
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      NACOS_SERVER_ADDR: nacos:8848
     depends_on:
       mysql-master:
         condition: service_healthy
@@ -122,6 +151,8 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+      nacos:
+        condition: service_started
     ports:
       - "8081:9090"
 
@@ -143,6 +174,7 @@ services:
       MYSQL_READ_PASSWORD: Password
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      NACOS_SERVER_ADDR: nacos:8848
     depends_on:
       mysql-master:
         condition: service_healthy
@@ -152,6 +184,8 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+      nacos:
+        condition: service_started
     ports:
       - "8082:9090"
 
@@ -175,6 +209,7 @@ services:
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_CONSUMER_GROUP: seckill-order-group
+      NACOS_SERVER_ADDR: nacos:8848
     depends_on:
       mysql-master:
         condition: service_healthy
@@ -185,6 +220,8 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_started
+      nacos:
         condition: service_started
     ports:
       - "8083:9091"
@@ -203,23 +240,49 @@ services:
       MYSQL_PASSWORD: Password
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_CONSUMER_GROUP: inventory-service-group
+      NACOS_SERVER_ADDR: nacos:8848
     depends_on:
       mysql-master:
         condition: service_healthy
       kafka:
         condition: service_started
+      nacos:
+        condition: service_started
     ports:
       - "8084:9092"
+
+  gateway-service:
+    build:
+      context: ./Back_End/Gateway
+      dockerfile: Dockerfile
+    container_name: gateway-service
+    restart: always
+    environment:
+      NACOS_SERVER_ADDR: nacos:8848
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_started
+      backend1:
+        condition: service_started
+      backend2:
+        condition: service_started
+      backend-order:
+        condition: service_started
+      backend-inventory:
+        condition: service_started
+    ports:
+      - "8085:9093"
 
   nginx:
     image: nginx:latest
     container_name: nginx
     restart: always
     depends_on:
-      - backend1
-      - backend2
-      - backend-order
-      - backend-inventory
+      - gateway-service
     ports:
       - "80:80"
     volumes:
