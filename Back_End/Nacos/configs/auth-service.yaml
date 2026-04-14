@@ -1,0 +1,67 @@
+spring:
+  datasource:
+    write:
+      url: jdbc:mysql://${MYSQL_WRITE_HOST:mysql-master}:${MYSQL_WRITE_PORT:3306}/${MYSQL_DB:distributed_software}?serverTimezone=Asia/Shanghai&useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      username: ${MYSQL_WRITE_USERNAME:root}
+      password: ${MYSQL_WRITE_PASSWORD:123456}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    read:
+      url: jdbc:mysql://${MYSQL_READ_HOST:${MYSQL_WRITE_HOST:mysql-master}}:${MYSQL_READ_PORT:${MYSQL_WRITE_PORT:3306}}/${MYSQL_DB:distributed_software}?serverTimezone=Asia/Shanghai&useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      username: ${MYSQL_READ_USERNAME:${MYSQL_WRITE_USERNAME:root}}
+      password: ${MYSQL_READ_PASSWORD:${MYSQL_WRITE_PASSWORD:123456}}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 3000ms
+
+server:
+  port: 9090
+  address: 0.0.0.0
+
+mybatis:
+  type-aliases-package: com.example.auth.model
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.auth: info
+    com.example.auth.config: debug
+
+demo:
+  message: Auth service config loaded from Nacos.
+
+traffic:
+  demo:
+    delay-millis: 0
+    force-failure: false
+    degrade-message: Auth service degraded response from Resilience4j.
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      trafficDemo:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+  ratelimiter:
+    instances:
+      trafficDemo:
+        limit-for-period: 5
+        limit-refresh-period: 1s
+        timeout-duration: 0

@@ -1,0 +1,53 @@
+spring:
+  datasource:
+    write:
+      url: jdbc:mysql://${MYSQL_WRITE_HOST:mysql-master}:${MYSQL_WRITE_PORT:3306}/${MYSQL_DB:distributed_software}?serverTimezone=Asia/Shanghai&useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      username: ${MYSQL_WRITE_USERNAME:root}
+      password: ${MYSQL_WRITE_PASSWORD:123456}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    read:
+      url: jdbc:mysql://${MYSQL_READ_HOST:${MYSQL_WRITE_HOST:mysql-master}}:${MYSQL_READ_PORT:${MYSQL_WRITE_PORT:3306}}/${MYSQL_DB:distributed_software}?serverTimezone=Asia/Shanghai&useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      username: ${MYSQL_READ_USERNAME:${MYSQL_WRITE_USERNAME:root}}
+      password: ${MYSQL_READ_PASSWORD:${MYSQL_WRITE_PASSWORD:123456}}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 3000ms
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:seckill-order-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    payment-simulator:
+      group-id: ${KAFKA_PAYMENT_SIMULATOR_GROUP:seckill-payment-simulator-group}
+
+server:
+  port: 9091
+  address: 0.0.0.0
+
+mybatis:
+  type-aliases-package: com.example.order.model
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.order: info
+    com.example.order.config: debug
